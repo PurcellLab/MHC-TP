@@ -36,3 +36,6 @@ Users
 data/D105skinW6_32_305183/
 hla_data.js
 hla_data.json
+
+#ignore extracted data
+data/ref/*
