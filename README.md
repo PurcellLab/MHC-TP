@@ -146,5 +146,5 @@ Example of `input` folder path:
 
 
 
-More detailed instructions coming soon... 🚀  
+More detailed instructions coming soon... 
 
