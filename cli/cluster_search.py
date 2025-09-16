@@ -21,7 +21,7 @@ from rich.traceback import install
 from jinja2 import Template
 import sys
 import altair as alt
-
+from cli.NumbaSearch import NP_clusterSearchCLI
 # import HTML
 import shutil
 
@@ -49,6 +49,7 @@ class ClusterSearch:
         self.treshold_img = False
         self.gibbs_results = None
         self.kld_df = None
+        self._outfolder=None
 
     def generate_unique_random_ids(self, count: int) -> list:
         """
@@ -159,6 +160,25 @@ class ClusterSearch:
         return True
 
     @staticmethod
+    # def format_input_gibbs(gibbs_matrix: str) -> pd.DataFrame:
+    #     """
+    #     Format the Gibbs output matrix.
+
+    #     :param gibbs_matrix: Path to the Gibbs matrix file
+    #     :return: Processed DataFrame
+    #     """
+    #     df = pd.read_csv(gibbs_matrix)
+    #     amino_acids = df.iloc[0, 0].split()
+    #     df.iloc[:, 0] = df.iloc[:, 0].str.replace(
+    #         r"^\d+\s\w\s", "", regex=True)
+    #     new_df = pd.DataFrame(df.iloc[1:, 0].str.split(
+    #         expand=True).values, columns=amino_acids)
+    #     new_df.reset_index(drop=True, inplace=True)
+    #     new_df = new_df.apply(pd.to_numeric, errors='coerce')
+    #     print(f"Formatted Gibbs matrix from {gibbs_matrix}")
+    #     print(new_df)
+    #     breakpoint()
+    #     return new_df
     def format_input_gibbs(gibbs_matrix: str) -> pd.DataFrame:
         """
         Format the Gibbs output matrix.
@@ -166,15 +186,100 @@ class ClusterSearch:
         :param gibbs_matrix: Path to the Gibbs matrix file
         :return: Processed DataFrame
         """
-        df = pd.read_csv(gibbs_matrix)
-        amino_acids = df.iloc[0, 0].split()
-        df.iloc[:, 0] = df.iloc[:, 0].str.replace(
-            r"^\d+\s\w\s", "", regex=True)
-        new_df = pd.DataFrame(df.iloc[1:, 0].str.split(
-            expand=True).values, columns=amino_acids)
-        new_df.reset_index(drop=True, inplace=True)
-        new_df = new_df.apply(pd.to_numeric, errors='coerce')
-        return new_df
+        try:
+            # Read file line by line to handle inconsistent formats
+            with open(gibbs_matrix, 'r') as f:
+                lines = f.readlines()
+            
+            # Find amino acid header and data start
+            amino_acids = None
+            data_start_idx = None
+            
+            for i, line in enumerate(lines):
+                line = line.strip()
+                
+                # Look for amino acid header line
+                if 'A R N D C Q E G H I L K M F P S T W Y V' in line:
+                    amino_acids = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 
+                                'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+                    data_start_idx = i + 1
+                    break
+                elif line.startswith('A R N D C Q E G H I L K M F P S T W Y V'):
+                    amino_acids = line.split()
+                    data_start_idx = i + 1
+                    break
+            
+            # Fallback: if no header found, try original CSV approach
+            if amino_acids is None:
+                try:
+                    df = pd.read_csv(gibbs_matrix)
+                    amino_acids = df.iloc[0, 0].split()
+                    data_start_idx = 1
+                    lines = [df.iloc[0, 0]] + [df.iloc[i, 0] for i in range(1, len(df))]
+                except:
+                    # Use standard amino acid order as last resort
+                    amino_acids = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 
+                                'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+                    data_start_idx = 0
+            
+            # Parse data lines
+            data_rows = []
+            for i in range(data_start_idx, len(lines)):
+                line = lines[i].strip()
+                
+                # Skip empty lines and comments
+                if not line or line.startswith('#') or 'position-specific' in line.lower():
+                    continue
+                
+                # Split line into parts
+                parts = line.split()
+                
+                # Skip lines that don't look like data
+                if len(parts) < len(amino_acids):
+                    continue
+                
+                # Extract numeric values (skip position number and amino acid identifier)
+                values = None
+                if len(parts) == len(amino_acids) + 2:  # position + AA + 20 values
+                    values = parts[2:]
+                elif len(parts) == len(amino_acids) + 1:  # position + 20 values
+                    values = parts[1:]
+                elif len(parts) == len(amino_acids):  # just 20 values
+                    values = parts
+                elif len(parts) > len(amino_acids) + 2:  # more than expected, take middle 20
+                    start_idx = len(parts) - len(amino_acids)
+                    values = parts[start_idx:]
+                
+                # Validate that we have exactly 20 numeric values
+                if values and len(values) == len(amino_acids):
+                    try:
+                        # Test if all values are numeric
+                        [float(v) for v in values]
+                        data_rows.append(values)
+                    except ValueError:
+                        continue
+            
+            if not data_rows:
+                raise ValueError(f"No valid data rows found in {gibbs_matrix}")
+            
+            # Create DataFrame
+            new_df = pd.DataFrame(data_rows, columns=amino_acids)
+            new_df = new_df.apply(pd.to_numeric, errors='coerce')
+            new_df.reset_index(drop=True, inplace=True)
+            
+            # print(f"Formatted Gibbs matrix from {gibbs_matrix}")
+            # print(new_df)
+            
+            return new_df
+            
+        except Exception as e:
+            print(f"Error processing {gibbs_matrix}: {str(e)}")
+            # Return empty DataFrame with standard amino acid columns as fallback
+            amino_acids = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 
+                        'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+            return pd.DataFrame(columns=amino_acids)
+
+    
 
     @staticmethod
     def amino_acid_order_identical(df1: pd.DataFrame, df2: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -1366,6 +1471,8 @@ class ClusterSearch:
     def save_correlation_data(self):
         """Save correlation data to CSV and JSON files"""
         try:
+            if not os.path.exists(os.path.join(self._outfolder, 'corr-data')):
+                os.makedirs(os.path.join(self._outfolder, 'corr-data'))
             # Save dataframe to CSV
             self.corr_df.to_csv(os.path.join(
                 self._outfolder, 'corr-data', 'corr_matrix.csv'), index=False)
@@ -1757,20 +1864,49 @@ class ClusterSearch:
 
     # New functions ends here
 
-    def generate_html_layout(self, correlation_dict, db, gibbs_out, immunolyser=False):
+    def generate_html_layout(self, correlation_dict, db, gibbs_out,output_path, immunolyser=False):
         """
         Generate an image grid for the correlation results.
         """
+        if output_path:
+            if not os.path.exists(output_path):
+                # Create the output folder if it doesn't exist
+                self._outfolder = self._make_dir(
+                    output_path, self.generate_unique_random_ids(6)[0]
+                )
+                CONSOLE.log(
+                    f"Output folder [bold yellow]{output_path} created successfully.", style="bold green")
+            else:
+                # Use existing folder and set _outfolder
+                self._outfolder = output_path
+                CONSOLE.log(
+                    f"Output folder [bold yellow]{output_path} already exists. Using the existing folder.", style="bold yellow")
+        else:
+            # If no output_path provided, create a default one
+            self._outfolder = self._make_dir(
+                "data/output_default", self.generate_unique_random_ids(6)[0]
+            )
+            CONSOLE.log(
+                f"No output path provided. Created default output folder: {self._outfolder}", style="bold yellow")
+        
         highest_corr_per_row = self.find_highest_correlation_for_each_row(
             correlation_dict
         )
         # print(highest_corr_per_row)
         display_search_results(highest_corr_per_row, self.threshold)
         # print(highest_corr_per_row)
-
+        
+        df = self.make_datatable(correlation_dict)
+        self.corr_df = df
+        self.d3js_json = self.save_correlation_data()
+        self.correlation_dict = correlation_dict
+        if self.kld_df is None:
+            self.kld_df = self.read_KLD_file(
+                os.path.join(gibbs_out, 'images', 'gibbs.KLDvsClusters.tab')
+                )
+        
         # added to self
         self.db = db
-
         if not os.path.exists(os.path.join(self._outfolder, 'cluster-img')):
             os.makedirs(os.path.join(self._outfolder, 'cluster-img'))
         if not os.path.exists(os.path.join(self._outfolder, 'allotypes-img')):
@@ -2715,8 +2851,8 @@ def run_cluster_search(args):
     # if args.output_folder is None:
     #     os.makedirs("output", exist_ok=True)
     #     output_folder = "output"
-    cluster_search = ClusterSearch()
-    cluster_search.console.rule(
+    cluster_search_html = ClusterSearch()
+    cluster_search_html.console.rule(
         "[bold red]Stage 1/2: Data processing for correlation matrices."
     )
     # print(args.species)
@@ -2725,7 +2861,7 @@ def run_cluster_search(args):
             f"Species provided: [bold yellow]{args.species}", style="bold green")
         CONSOLE.log(
             f"Loading reference databse for [bold yellow]{args.species}", style="bold green")
-        db = cluster_search._db_loader(args.reference_folder, args.species)
+        db = cluster_search_html._db_loader(args.reference_folder, args.species)
         CONSOLE.log(f"Reference database loaded successfully.",
                     style="bold green")
     else:
@@ -2779,21 +2915,38 @@ def run_cluster_search(args):
         args.hla_types = None
         CONSOLE.log(
             f"No HLA/MHC allotypes types provided. Using all available HLA types from the reference folder.", style="bold yellow")
-
+    
     CONSOLE.log(f"calculating compute_correlations.", style="bold blue")
-    cluster_search.compute_correlations_v2(
-        db,
-        args.gibbs_folder,
-        args.n_clusters,
-        args.output,
-        args.hla_types,
-        args.threshold,
-        args.treshold_img
-    )
+    
+    if args.Searchtype == "Numba":
+        CONSOLE.log(f"Using Numba for correlation calculation.", style="bold blue")
+        cluster_search = NP_clusterSearchCLI()
+        cluster_search.compute_correlations_V3(
+            db,
+            args.gibbs_folder,
+            args.n_clusters,
+            args.output,
+            args.hla_types,
+            args.threshold,
+            args.NumbaDB,
+            args.species
+        )
+        # breakpoint()
+    else:
+        cluster_search_html.compute_correlations_v2(
+            db,
+            args.gibbs_folder,
+            args.n_clusters,
+            args.output,
+            args.hla_types,
+            args.threshold,
+            args.treshold_img
+        )
 
     # cluster_search.generate_image_grid(cluster_search.correlation_dict,db)
-    cluster_search.generate_html_layout(
-        cluster_search.correlation_dict, db, args.gibbs_folder, args.immunolyser)
+    cluster_search_html.generate_html_layout(
+            cluster_search.correlation_dict, db, args.gibbs_folder, args.output, args.immunolyser
+        )
 
     # breakpoint()
 
@@ -2805,11 +2958,11 @@ def run_cluster_search(args):
     #     args.hla_types,
     # )
 
-    cluster_search.console.rule(
+    cluster_search_html.console.rule(
         "[bold red]Stage 2/2: Finding best matching Naturally presented HLA ."
     )
     # if args.output_folder is None:
-    cluster_search.plot_heatmap(args.output)
+    cluster_search_html.plot_heatmap(args.output)
 
     # cluster_search.console.rule("[bold red]Stage 3/4: Cheking the HLA.")
 
@@ -2838,22 +2991,22 @@ def run_cluster_search(args):
 
 
 # if __name__ == "__main__":
-    #     # ClusterSearch().compute_correlations(
-    #     #     "data/9mersonly",
-    #     #     "data/ref_data/Gibbs_motifs_mouse/output_matrices",
-    #     #     "all",
-    #     #     "data/outputM",
-    #     # )
+        # ClusterSearch().compute_correlations(
+        #     "data/9mersonly",
+        #     "data/ref_data/Gibbs_motifs_mouse/output_matrices",
+        #     "all",
+        #     "data/outputM",
+        # )
 
-    #     # ClusterSearch()._compute_and_log_correlation(
-    #     #     "data/9mersonly",
-    #     #     "data/ref_data/Gibbs_motifs_human/output_matrices_human",
-    #     #     "cluster_1of5.mat",
-    #     #     "HLA_A_02_01.txt",
-    #     # )
-    #     # print(sys.argv)
+        # ClusterSearch()._compute_and_log_correlation(
+        #     "data/9mersonly",
+        #     "data/ref_data/Gibbs_motifs_human/output_matrices_human",
+        #     "cluster_1of5.mat",
+        #     "HLA_A_02_01.txt",
+        # )
+        # print(sys.argv)
 
-    #     # print(ClusterSearch()._db_loader("data/ref_data/","mouse"))
+        # print(ClusterSearch()._db_loader("data/ref_data/","mouse"))
 
     # run_cluster_search(
     #     argparse.Namespace(
@@ -2869,3 +3022,23 @@ def run_cluster_search(args):
     #         immunolyser=False
     #     )
     # )
+
+
+    # run_cluster_search(
+    #         argparse.Namespace(
+    #             credits=False,
+    #             gibbs_folder="data/P6215/mhcI_1224927",
+    #             species="human",
+    #             Searchtype="Numba",
+    #             hla_types=None,
+    #             reference_folder="data/ref_data/",
+    #             data_dir="data/ref_data/human_db",
+    #             threshold=0.7,
+    #             log=False,
+    #             n_clusters="all",
+    #             output="data/outputHumanTest",
+    #             processes=4,
+    #             version=False,
+    #             immunolyser=False
+    #         )
+    #     )

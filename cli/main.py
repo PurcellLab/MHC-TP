@@ -140,6 +140,13 @@ def main():
         help="Number of parallel processes to use.",
     )
     parser.add_argument(
+        "-st",
+        "--Searchtype",
+        type=str,
+        default="Numba",
+        help="Type of search to perform [Numba,IO] (default: Numba).",
+    )
+    parser.add_argument(
         "-n",
         "--n_clusters",
         type=str,
@@ -160,6 +167,13 @@ def main():
         default=False,
         help="Enable immunolyser output.",
         action="store_true"
+    )
+    parser.add_argument(
+        '-npDB',
+        '--NumbaDB',
+        type=str,
+        default="data/ref_data/human_db",
+        help="Path to the Arrary database folder.",
     )
 
     parser.add_argument(

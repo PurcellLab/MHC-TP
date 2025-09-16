@@ -132,15 +132,125 @@ def Database_gen(config_file):
         sys.exit(0)
     
     
-    
+def generate_HLA_freq_database(out_put_ditectory=None):
+    """Generate HLA frequency database."""
+    if out_put_ditectory is None:
+        CONSOLE.log("Output directory not specified. Please provide a valid output directory.", style="red")
+        sys.exit(1)
+    try:
+        from .HLAfreq import get_list, makeURL, getAFdata, url_encode_name
+    except ImportError:
+        CONSOLE.log("HLAfreq function Not avilable please check....", style="red")
+        sys.exit(1)
 
-# # Database_gen("config.json")
-if __name__ == "__main__":
-    config_file = "config.json"
-    config = _prase_config_file(config_file)
-    _check_ref_files(config)
-    hla_list = _HLA_liist(config)
+    # from .HLAfreq import HLAfreq_pymc as HLAhdi
+    import pandas as pd
+    import numpy as np
+    import matplotlib.pyplot as plt
+    
+    
+    #country_list = ["Australia", "Thailand", "United States of America", "United Kingdom", "Germany", "France", "Italy", "Spain", "Netherlands", "Sweden", "Norway", "Finland", "Denmark", "Belgium", "Switzerland", "Austria", "Poland", "Czech Republic", "Hungary", "Portugal"]
+    # country_list = ["Australia"]
+    CONSOLE.log("Processing HLA frequency data for countries...", style="blue")
+    country_list = get_list("country")
+    # print(country_list)
+    # for country in country_list:
+    #     print(f"Processing {url_encode_name(country)}...")
+    CONSOLE.log(f"Total countries to process: {len(country_list)}", style="yellow")
+    for country in country_list:
+        CONSOLE.log(f"Processing {url_encode_name(country)}...", style="blue")
+        base_url = makeURL(country)
+        try:
+            CONSOLE.log(f"Base URL for {country}: {base_url}", style="green")
+            aftab = getAFdata(base_url)
+            aftab.to_csv(f"{out_put_ditectory}/{country}_raw.csv", index=False)
+            CONSOLE.log(f"Raw data for {country} saved to example/{country}_raw.csv", style="green")
+        except Exception as e:
+            CONSOLE.log(f"Error processing {country}: {e}", style="red")
+            continue
+    
+    
+def add_allefreq_to_db(db_pat, allefreq_path,allefreq_output,loci="A",freq=0.01):
+    try:
+        from .HLAfreq import only_complete, combineAF, decrease_resolution,check_resolution
+        import matplotlib.pyplot as plt
+        import pandas as pd
+    except ImportError:
+        CONSOLE.log("HLAfreq function Not available please check....", style="red")
+        sys.exit(1)
+    """Add allele frequency data to the database."""
+    if not os.path.exists(db_pat):
+        CONSOLE.log(f"Database file {db_pat} does not exist.", style="red")
+        sys.exit(1)
+    
+    if not os.path.exists(allefreq_path):
+        CONSOLE.log(f"Allele frequency file {allefreq_path} does not exist.", style="red")
+        sys.exit(1)
+    
+    # Load the database and allele frequency data
+    db = pd.read_csv(db_pat)
+    # print(db)
+    # allefreq = pd.read_csv(allefreq_path) 
+    country_files = [f for f in os.listdir(allefreq_path) if f.endswith('_raw.csv')]
+    if not country_files:
+        CONSOLE.log(f"No allele frequency files found in {allefreq_path}.", style="red")
+        sys.exit(1) 
+    country_count = 0  
+    cafs = []
+    for country in country_files:
+        country_count += 1
+        country_path = os.path.join(allefreq_path, country)
+        allefreq = pd.read_csv(country_path)
+        CONSOLE.log(f"Processing allele frequency data for {country}... {country_count}/{len(country_files)}", style="blue")
+        # print(allefreq.allele)
+            # print(allefreq)
+        # Drop any incomplete studies
+        aftab = only_complete(allefreq)
+        check = check_resolution(aftab)
+        if check:
+            aftab = decrease_resolution(aftab, 2)
+            afloc = aftab[aftab.loci==loci]
+            if afloc.empty:
+                CONSOLE.log(f"No A locus data found for {country}. Skipping...", style="yellow")
+                continue
+            caf = combineAF(afloc)
+            caf['country'] = country.split('_')[0]  # Extract country name from filename
+            cafs.append(caf)
+        else:
+            continue
+        # Ensure all alleles have the same resolution
+        # aftab = decrease_resolution(aftab, 2)
+    cafs = pd.concat(cafs, ignore_index=True)
+    cafs.to_csv(f"{allefreq_output}/01HLA_freq_by_country_all_HLA-{loci}.csv", index=False)
+    international = combineAF(cafs, datasetID='country')
+    mask = international.allele_freq > freq
+    international[mask].plot.barh('allele', 'allele_freq')
+    plt.savefig(f"{allefreq_output}/01HLA_freq_by_country_Top20_HLA-{loci}_freq>{freq}.png")
+    # plt.show()
+# # # Database_gen("config.json")
+# if __name__ == "__main__":
+#     config_file = "config.json"
+#     config = _prase_config_file(config_file)
+    # _check_ref_files(config)
+    # hla_list = _HLA_liist(config)
     # print(hla_list)
     # print(config)
-    CONSOLE.log("Config file parsed successfully")
+    # CONSOLE.log("Config file parsed successfully")
     # sys.exit(0)
+    
+    ### HLA frequency database generation
+ 
+
+        # # Combine studies within country
+        # caf = combineAF(aftab)
+        # # Add country name to dataset, this is used as `datasetID` going forward
+        # caf['country'] = country
+        # cafs.append(caf)
+
+    # cafs = pd.concat(cafs, ignore_index=True)
+    # international = combineAF(cafs, datasetID='country')
+    # print(international)
+    # db_pat = "/home/sson0030/xy86_scratch2/SANJAY/MHC-TP/data/ref_data/human.db"
+    # allefreq_path = "/home/sson0030/xy86_scratch2/SANJAY/MHC-TP/data/ref_data/HLAfreq/byCountry/"
+    # allefreq_output = "/home/sson0030/xy86_scratch2/SANJAY/MHC-TP/data/ref_data/HLAfreq/output"
+    # add_allefreq_to_db(db_pat, allefreq_path,allefreq_output,loci="C",freq=0.01)

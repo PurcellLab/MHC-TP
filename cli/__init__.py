@@ -13,3 +13,5 @@ filterwarnings(
     category=UserWarning,
     module="psims.mzmlb",
 )
+
+from .HLAfreq import *
