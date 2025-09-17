@@ -333,8 +333,8 @@ def np_pearson_correlation(x, y):
 class NP_clusterSearchCLI:
     """Wrapper for NP search with easy integration"""
     
-    def __init__(self):
-        self.np_fast = npClusterSearch()
+    def __init__(self, cache_dir: str = "numba_cache"):
+        self.np_fast = npClusterSearch(cache_dir=cache_dir)
         self.correlation_dict = {}
         self.console = CONSOLE  
         

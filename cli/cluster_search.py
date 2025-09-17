@@ -2924,7 +2924,7 @@ def run_cluster_search(args):
     
     if args.Searchtype == "Numba":
         CONSOLE.log(f"Using Numba for correlation calculation.", style="bold blue")
-        cluster_search = NP_clusterSearchCLI()
+        cluster_search = NP_clusterSearchCLI(cache_dir = os.path.join(args.reference_folder,"numba_cache"))
         cluster_search.compute_correlations_V3(
             db,
             args.gibbs_folder,
