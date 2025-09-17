@@ -40,3 +40,4 @@ hla_data.json
 #ignore extracted data
 data/ref/*
 
+uMAP.py

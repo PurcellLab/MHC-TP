@@ -2862,6 +2862,7 @@ def run_cluster_search(args):
         CONSOLE.log(
             f"Loading reference databse for [bold yellow]{args.species}", style="bold green")
         db = cluster_search_html._db_loader(args.reference_folder, args.species)
+        
         CONSOLE.log(f"Reference database loaded successfully.",
                     style="bold green")
     else:
@@ -2889,16 +2890,19 @@ def run_cluster_search(args):
                 spinner="squish",
                 spinner_style="yellow",
             )
+            DB_HLA_list = [hla.lower() for hla in  db['formatted_allotypes'].values]
             for u_hla in str(args.hla_types).split(','):
-                if u_hla in db['formatted_allotypes'].values:
+                u_hla = u_hla.replace('[',"").replace(']',"").replace("'","")
+                if u_hla.lower() in DB_HLA_list:
                     status.update(
                         status=f"[bold blue] HLA/MHC {u_hla} found in databse",
                         spinner="squish",
                         spinner_style="yellow",
                     )
                     u_hla_list.append(u_hla)
-                    CONSOLE.log(
-                        f"HLA/MHC [bold yellow]{u_hla}[yellow] found in databse", style="bold green")
+                    # time.sleep(10)
+                    # CONSOLE.log(
+                    #     f"HLA/MHC [bold yellow]{u_hla}[yellow] found in databse", style="bold green")
                 else:
                     status.update(
                         status=f"[bold blue] HLA/MHC {u_hla} not found in databse",

@@ -228,29 +228,63 @@ def add_allefreq_to_db(db_pat, allefreq_path,allefreq_output,loci="A",freq=0.01)
     plt.savefig(f"{allefreq_output}/01HLA_freq_by_country_Top20_HLA-{loci}_freq>{freq}.png")
     # plt.show()
 # # # Database_gen("config.json")
+import os
+
+import os
+import pandas as pd
+
+def _formate_mouse_DB(ref_db_path, db_path, out_db_path=None):
+    # Load DB
+    db = pd.read_csv(db_path)
+
+    # Walk through motif + matrices folders and rename files
+    for folder in os.listdir(ref_db_path):
+        if folder in ["motif", "matrices"]:
+            folder_path = os.path.join(ref_db_path, folder)
+            for fname in os.listdir(folder_path):
+                if fname.startswith("MHC_"):
+                    old_path = os.path.join(folder_path, fname)
+                    new_name = fname.replace("MHC_", "", 1)  # replace prefix
+                    new_path = os.path.join(folder_path, new_name)
+                    os.rename(old_path, new_path)
+                    print(f"Renamed: {old_path} → {new_path}")
+
+                    # Update DB entries that reference this filename
+                    db = db.replace(fname, new_name)
+
+    # Save updated DB
+    if out_db_path is None:
+        out_db_path = db_path  # overwrite input DB
+    db.to_csv(out_db_path, index=False)
+    print(f"Database updated and saved to {out_db_path}")
+
 # if __name__ == "__main__":
-#     config_file = "config.json"
-#     config = _prase_config_file(config_file)
+    # config_file = "config.json"
+    # config = _prase_config_file(config_file)
     # _check_ref_files(config)
+    # path="/home/sson0030/xy86_scratch2/SANJAY/MHC-TP/data/ref_data/Gibbs_motifs_mouse"
+    # path="data/ref_data/Gibbs_motifs_mouse"
+    # db_path="data/ref_data/mouse.db"
+    # _formate_mouse_DB(path,db_path)
     # hla_list = _HLA_liist(config)
     # print(hla_list)
     # print(config)
     # CONSOLE.log("Config file parsed successfully")
-    # sys.exit(0)
+#     sys.exit(0)
     
-    ### HLA frequency database generation
+#     ## HLA frequency database generation
  
 
-        # # Combine studies within country
-        # caf = combineAF(aftab)
-        # # Add country name to dataset, this is used as `datasetID` going forward
-        # caf['country'] = country
-        # cafs.append(caf)
+#         # Combine studies within country
+#         caf = combineAF(aftab)
+#         # Add country name to dataset, this is used as `datasetID` going forward
+#         caf['country'] = country
+#         cafs.append(caf)
 
-    # cafs = pd.concat(cafs, ignore_index=True)
-    # international = combineAF(cafs, datasetID='country')
-    # print(international)
-    # db_pat = "/home/sson0030/xy86_scratch2/SANJAY/MHC-TP/data/ref_data/human.db"
-    # allefreq_path = "/home/sson0030/xy86_scratch2/SANJAY/MHC-TP/data/ref_data/HLAfreq/byCountry/"
-    # allefreq_output = "/home/sson0030/xy86_scratch2/SANJAY/MHC-TP/data/ref_data/HLAfreq/output"
-    # add_allefreq_to_db(db_pat, allefreq_path,allefreq_output,loci="C",freq=0.01)
+#     cafs = pd.concat(cafs, ignore_index=True)
+#     international = combineAF(cafs, datasetID='country')
+#     print(international)
+#     db_pat = "/home/sson0030/xy86_scratch2/SANJAY/MHC-TP/data/ref_data/human.db"
+#     allefreq_path = "/home/sson0030/xy86_scratch2/SANJAY/MHC-TP/data/ref_data/HLAfreq/byCountry/"
+#     allefreq_output = "/home/sson0030/xy86_scratch2/SANJAY/MHC-TP/data/ref_data/HLAfreq/output"
+#     add_allefreq_to_db(db_pat, allefreq_path,allefreq_output,loci="C",freq=0.01)

@@ -49,6 +49,7 @@ class npClusterSearch:
         amino_acids = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 
                       'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
         
+        self.amino_acids = amino_acids
         # Load all matrices
         matrices_data = []
         metadata_list = []
@@ -77,10 +78,14 @@ class npClusterSearch:
                     'hla': hla,
                     'original_db_index': i
                 })
-        
+
+                
         # Find max dimensions and create unified array
         if not matrices_data:
             raise ValueError("No valid matrices found!")
+            # self.console.log(f"No valid matrices found!")
+            
+        
             
         max_positions = max(m.shape[0] for m in matrices_data)
         n_matrices = len(matrices_data)
@@ -210,13 +215,17 @@ class npClusterSearch:
             hla_mask = self.reference_metadata['hla'].isin(hla_filter).values
         
         # JIT-compiled correlation computation
-        correlation_matrix = compute_all_correlations_jit(
+        correlation_matrix, invalid_flags = compute_all_correlations_jit(
             gibbs_matrices, 
             self.reference_matrices.astype(np.float32),
             hla_mask,
             threshold
         )
-        
+        #Log if invalid input reference provided 
+        for i, flag in enumerate(invalid_flags):
+            if flag == 1:
+                self.console.log(f"Gibbs matrix {i} was skipped (invalid or insufficient data).")
+                
         # Process results
         results = {}
         for i, gibbs_name in enumerate(gibbs_names):
@@ -246,7 +255,7 @@ class npClusterSearch:
 @jit(nopython=True, parallel=True, fastmath=True)
 def compute_all_correlations_jit(gibbs_matrices, ref_matrices, hla_mask, threshold):
     """
-    JIT-compiled correlation computation - THIS IS THE SPEED SECRET!
+    JIT-compiled correlation computation - THIS IS THE SPEED SECRET! Hope it works!!  
     
     Computes all correlations in parallel using optimized machine code
     """
@@ -256,6 +265,8 @@ def compute_all_correlations_jit(gibbs_matrices, ref_matrices, hla_mask, thresho
     # Pre-allocate result matrix
     correlations = np.full((n_gibbs, n_refs), -1.0, dtype=np.float32)
     
+    #recored if any invalid matrix
+    invalid_flags = np.zeros(n_gibbs, dtype=np.int32)  # 0 = valid, 1 = invalid
     # Parallel computation across Gibbs matrices
     for i in prange(n_gibbs):
         gibbs_flat = gibbs_matrices[i].flatten()
@@ -265,6 +276,7 @@ def compute_all_correlations_jit(gibbs_matrices, ref_matrices, hla_mask, thresho
         gibbs_clean = gibbs_flat[gibbs_valid_mask]
         
         if len(gibbs_clean) < 10:  # Skip if too few valid values
+            invalid_flags[i] = 1
             continue
             
         # Precompute statistics for Gibbs matrix
@@ -272,6 +284,7 @@ def compute_all_correlations_jit(gibbs_matrices, ref_matrices, hla_mask, thresho
         gibbs_std = np.std(gibbs_clean)
         
         if gibbs_std == 0.0:
+            invalid_flags[i] = 1
             continue
             
         # Compute correlations with all reference matrices
@@ -297,7 +310,7 @@ def compute_all_correlations_jit(gibbs_matrices, ref_matrices, hla_mask, thresho
             if correlation >= threshold:
                 correlations[i, j] = correlation
     
-    return correlations
+    return correlations, invalid_flags
 
 @jit(nopython=True, fastmath=True)
 def np_pearson_correlation(x, y):
@@ -332,7 +345,7 @@ class NP_clusterSearchCLI:
                                       data_dir: str = None, species: str = "human"):
         """fast correlation computation - 10-100x faster than original"""
         
-        self.console.log("Starting FAST correlation computation...")
+        self.console.log("Starting Numba Arrary correlation computation...")
         
         # Build/load cache
         cache_start = time.time()
@@ -359,10 +372,11 @@ class NP_clusterSearchCLI:
 
 # if __name__ == "__main__":
 #     search = NP_clusterSearchCLI()
-#     species = "human"
+#     species = "mouse"#"human"
 #     n_clusters = "all"
-#     gibbs_results = '/home/sson0030/xy86_scratch2/SANJAY/MHC-TP/data/P6215/mhcI_1224927/'
-#     output_path = '/home/sson0030/xy86_scratch2/SANJAY/MHC-TP/data/NPoutput_directory'
+#     # gibbs_results = '/home/sson0030/xy86_scratch2/SANJAY/MHC-TP/data/P6215/mhcI_1224927/'  
+#     gibbs_results = '/home/sson0030/xy86_scratch2/SANJAY/MHC-TP/data/9mersonly'
+#     output_path = '/home/sson0030/xy86_scratch2/SANJAY/MHC-TP/data/NPoutput_directoryMHC'
 #     hla_list = None
 #     threshold = 0.70
 #     data_dir = "/home/sson0030/xy86_scratch2/SANJAY/MHC-TP/data/ref_data"
