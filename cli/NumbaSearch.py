@@ -165,11 +165,17 @@ class npClusterSearch:
             return None
 
     def Np_fast_search(self, gibbs_matrices_dir: str, n_clusters: str = "all",
-                         hla_filter: PyList[str] = None, threshold: float = 0.70) -> PyDict:
+                   hla_filter: PyList[str] = None, threshold: float = 0.70,
+                   topHit: int = 3):
         """
-        fast correlation search using Numba JIT compilation
-        
-        Returns results in ~1-5 seconds for full search
+        Fast correlation search using Numba JIT compilation
+
+        Returns:
+        --------
+        results : dict
+            Best hit per Gibbs matrix (compatible with existing code)
+        top_hits_dict : dict
+            Top N hits per Gibbs matrix (hla -> correlation)
         """
         if not self.is_initialized:
             raise ValueError("Cache not initialized. Call build_reference_cache first.")
@@ -179,77 +185,80 @@ class npClusterSearch:
         
         # Load Gibbs matrices
         gibbs_files = [f for f in os.listdir(gibbs_matrices_dir) if f.endswith('.mat')]
-        
-        # Filter by cluster number
         if n_clusters.isdigit():
             gibbs_files = [f for f in gibbs_files if f.endswith(f"of{n_clusters}.mat")]
-            
+        
         self.console.log(f"Searching {len(gibbs_files)} Gibbs matrices against {len(self.reference_matrices)} references...")
         
-        # Load all Gibbs matrices into memory
         gibbs_matrices_list = []
         gibbs_names = []
-        
         for gf in gibbs_files:
             self.console.log(f"Loading {gf}...")
-            matrix = self._fast_load_matrix(
-                os.path.join(gibbs_matrices_dir, gf), 
-                self.amino_acids
-            )
+            matrix = self._fast_load_matrix(os.path.join(gibbs_matrices_dir, gf), self.amino_acids)
             if matrix is not None:
-                # Pad to match reference dimensions
                 padded = np.zeros((self.max_positions, len(self.amino_acids)), dtype=np.float32)
                 padded[:matrix.shape[0], :matrix.shape[1]] = matrix
                 gibbs_matrices_list.append(padded)
                 gibbs_names.append(gf)
         self.console.log(f"Loaded {len(gibbs_matrices_list)} Gibbs matrices.")
         if not gibbs_matrices_list:
-            return {}
-            
-        # Convert to numpy array for Numba
+            return {}, {}
+        
         gibbs_matrices = np.array(gibbs_matrices_list, dtype=np.float32)
         
-        # Create filter mask for HLA types
+        # HLA filter mask
         hla_mask = np.ones(len(self.reference_metadata), dtype=np.bool_)
         if hla_filter:
             hla_mask = self.reference_metadata['hla'].isin(hla_filter).values
         
-        # JIT-compiled correlation computation
         correlation_matrix, invalid_flags = compute_all_correlations_jit(
-            gibbs_matrices, 
+            gibbs_matrices,
             self.reference_matrices.astype(np.float32),
             hla_mask,
             threshold
         )
-        #Log if invalid input reference provided 
+        
         for i, flag in enumerate(invalid_flags):
             if flag == 1:
                 self.console.log(f"Gibbs matrix {i} was skipped (invalid or insufficient data).")
-                
-        # Process results
+        
         results = {}
+        top_hits_dict = {}
+
         for i, gibbs_name in enumerate(gibbs_names):
-            best_idx = -1
-            best_corr = -1.0
-            
-            for j in range(len(self.reference_metadata)):
-                if correlation_matrix[i, j] > best_corr:
-                    best_corr = correlation_matrix[i, j]
-                    best_idx = j
-            
-            if best_corr >= threshold:
-                ref_info = self.reference_metadata.iloc[best_idx]
-                results[gibbs_name] = {
-                    'hla': ref_info['hla'],
-                    'correlation': best_corr,
-                    'ref_path': ref_info['path']
+            corrs = correlation_matrix[i, :]
+            top_indices = np.argsort(corrs)[::-1]  # descending order
+            top_indices = [idx for idx in top_indices if corrs[idx] >= threshold][:topHit]
+
+            if not top_indices:
+                continue
+
+            # Best hit for compatibility
+            best_idx = top_indices[0]
+            best_hit = {
+                'hla': self.reference_metadata.iloc[best_idx]['hla'],
+                'correlation': corrs[best_idx],
+                'ref_path': self.reference_metadata.iloc[best_idx]['path']
+            }
+            results[gibbs_name] = best_hit
+
+            # Top N hits as dict
+            top_hits_dict[gibbs_name] = [
+                {
+                    'hla': self.reference_metadata.iloc[idx]['hla'],
+                    'correlation': corrs[idx],
+                    'ref_path': self.reference_metadata.iloc[idx]['path']
                 }
+                for idx in top_indices
+            ]
         
         search_time = time.time() - start_time
         self.console.log(f"NP search completed in {search_time:.3f} seconds!")
         self.console.log(f"Found {len(results)} matches above threshold {threshold}")
-        
-        return results
+
+        return results, top_hits_dict
+
+
 
 # Numba JIT-compiled functions for maximum speed
 @jit(nopython=True, parallel=True, fastmath=True)
@@ -355,16 +364,24 @@ class NP_clusterSearchCLI:
         
         #fast search
         gibbs_matrices_dir = os.path.join(gibbs_results, "matrices")
-        results = self.np_fast.Np_fast_search(
+        results, top_hits_dict = self.np_fast.Np_fast_search(
             gibbs_matrices_dir, n_clusters, hla_list, threshold
         )
         
         # Convert to your existing format
-        for gibbs_name, result in results.items():
-            key = (gibbs_name, result['ref_path'])
-            self.correlation_dict[key] = result['correlation']
-        
-        self.console.log(f"Correlation computation complete! Found {self.correlation_dict} correlations")
+        # for gibbs_name, result in results.items():
+        #     key = (gibbs_name, result['ref_path'])
+        #     self.correlation_dict[key] = result['correlation']
+            
+        for gibbs_name, hits in top_hits_dict.items():  # hits is a list
+            for result in hits:  # each result is a dict
+                key = (gibbs_name, result['ref_path'])
+                self.correlation_dict[key] = result['correlation']
+
+    
+        # `top_hits_df` now has all top N correlations per Gibbs matrix
+        # print(top_hits_df.head())
+        # self.console.log(f"Correlation computation complete! Found {self.correlation_dict} correlations")
         self.console.log(f"NP search complete! Found {len(results)} correlations")
         return results
 
