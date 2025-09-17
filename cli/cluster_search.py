@@ -2892,7 +2892,7 @@ def run_cluster_search(args):
             )
             DB_HLA_list = [hla.lower() for hla in  db['formatted_allotypes'].values]
             for u_hla in str(args.hla_types).split(','):
-                u_hla = u_hla.replace('[',"").replace(']',"").replace("'","")
+                u_hla = u_hla.replace("[","").replace("]","").replace("'","")
                 if u_hla.lower() in DB_HLA_list:
                     status.update(
                         status=f"[bold blue] HLA/MHC {u_hla} found in databse",
