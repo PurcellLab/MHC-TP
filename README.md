@@ -143,7 +143,15 @@ Example of `input` folder path:
 
 ![Example Output](assets/img/google-colab.png)  
 
+### Citation
 
+If you use **MHC-TP / HLA-PepClust** in your research, please cite:
+
+**Immunolyser 2.0: an advanced computational pipeline for comprehensive analysis of immunopeptidomic data**
+Prithvi Raj Munday¹,†, Sanjay S.G. Krishna¹,†, Joshua Fehring¹, Nathan P. Croft¹, Anthony W. Purcell¹, Chen Li¹,², and Asolina Braun¹
+¹Department of Biochemistry and Molecular Biology and Biomedicine Discovery Institute, Monash University, Clayton, VIC, 3800, Australia
+²Department of Medicine, School of Clinical Sciences at Monash Health, Monash University, Clayton, VIC 3168, Australia
+
+*Computational and Structural Biotechnology Journal*
 
 More detailed instructions coming soon... 
-
