@@ -96,23 +96,26 @@ clust-search data/D90_HLA_3844874 data/ref_data/Gibbs_motifs_human/output_matric
 ```
 
 ## Command Line Arguments  
+| Argument         | Type    | Description                                                                 | Default                  |
+|------------------|---------|-----------------------------------------------------------------------------|--------------------------|
+| `gibbs_folder`   | `str`   | Path to test folder containing matrices.                                    | *Required*               |
+| `reference_folder` | `str` | Path to reference folder containing matrices.                               | *Required*               |
+| `-o, --output`   | `str`   | Path to output folder.                                                      | `"output"`               |
+| `-hla, --hla_types` | `list` | List of HLA types to search.                                               | *All*                    |
+| `-p, --processes` | `int`  | Number of parallel processes to use.                                        | `4`                      |
+| `-n, --n_clusters` | `str` | Number of clusters to search for.                                           | `"all"`                  |
+| `-t, --threshold` | `float` | Motif similarity threshold.                                                 | `0.70`                   |
+| `-s, --species`   | `str`   | Species to search [Human, Mouse].                                          | `"human"`                |
+| `-db, --database` | `str`   | Generate a motif database from a configuration file.                        | `"data/config.json"`     |
+| `-st, --Searchtype` | `str` | Type of search to perform [Numba, IO].                                      | `"Numba"`                |
+| `-k, --best_KL`   | `bool`  | Find the best KL divergence only.                                          | `False`                  |
+| `--topNHits`      | `int`   | Number of top hits to retain per Gibbs matrix.                             | `3`                      |
+| `-l, --log`       | `bool`  | Enable logging.                                                            | `False`                  |
+| `-im, --immunolyser` | `bool` | Enable immunolyser output.                                               | `False`                  |
+| `-npDB, --NumbaDB` | `str`  | Path to the Array database folder.                                          | `"data/ref_data/human_db"` |
+| `-c, --credits`   | `bool`  | Show credits for the motif database pipeline.                              | `False`                  |
+| `-v, --version`   | `bool`  | Show the version of the pipeline.                                          | `False`                  |
 
-| Argument | Type | Description | Default |
-|----------|------|-------------|---------|
-| `gibbs_folder` | `str` | Path to test folder containing matrices. | *Required* |
-| `reference_folder` | `str` | Path to reference folder containing matrices. | *Required* |
-| `-o, --output` | `str` | Path to output folder. | `"output"` |
-| `-hla, --hla_types` | `list` | List of HLA types to search. | *All* |
-| `-p, --processes` | `int` | Number of parallel processes to use. | `4` |
-| `-n, --n_clusters` | `int` | Number of clusters to search for. | `"all"` |
-| `-t, --threshold` | `float` | Motif similarity threshold. | `0.5` |
-| `-s, --species` | `str` | Species to search [Human, Mouse]. | `"human"` |
-| `-db, --database` | `str` | Generate a motif database from a configuration file. | `"data/config.json"` |
-| `-k, --best_KL` | `bool` | Find the best KL divergence only. | `False` |
-| `-l, --log` | `bool` | Enable logging. | `False` |
-| `-im, --immunolyser` | `bool` | Enable immunolyser output. | `False` |
-| `-c, --credits` | `bool` | Show credits for the motif database pipeline. | `False` |
-| `-v, --version` | `bool` | Show the version of the pipeline. | `False` |
 
 ## Example Output  
 
