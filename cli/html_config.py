@@ -9,7 +9,7 @@ html_content = Template("""
   <meta name="description" content="HLA Cluster Search Algorithm for find closely related HLA types">
   <meta name="author" content="Sanjay SG Krishna Monash University">
   <meta name="generator" content="">
-  <title>Clust-search {{ version }}</title>
+  <title>MHC-TP {{ version }}</title>
 
 
 

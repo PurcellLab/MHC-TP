@@ -177,6 +177,13 @@ def main():
     )
 
     parser.add_argument(
+        "--topNHits",
+        type=int,
+        default=3,
+        help="Number of top hits to retain per Gibbs matrix (default: 3)"
+    )
+    
+    parser.add_argument(
         "-c",
         "--credits",
         action="store_true",

@@ -351,7 +351,9 @@ class NP_clusterSearchCLI:
                                       n_clusters: str, output_path: str,
                                       hla_list: PyList[str] = None, 
                                       threshold: float = 0.70,
-                                      data_dir: str = None, species: str = "human"):
+                                      data_dir: str = None, 
+                                      species: str = "human",
+                                      topHit: int = 3):
         """fast correlation computation - 10-100x faster than original"""
         
         self.console.log("Starting Numba Arrary correlation computation...")
@@ -365,7 +367,7 @@ class NP_clusterSearchCLI:
         #fast search
         gibbs_matrices_dir = os.path.join(gibbs_results, "matrices")
         results, top_hits_dict = self.np_fast.Np_fast_search(
-            gibbs_matrices_dir, n_clusters, hla_list, threshold
+            gibbs_matrices_dir, n_clusters, hla_list, threshold, topHit
         )
         
         # Convert to your existing format
