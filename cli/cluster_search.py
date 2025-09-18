@@ -2933,7 +2933,8 @@ def run_cluster_search(args):
             args.hla_types,
             args.threshold,
             args.NumbaDB,
-            args.species
+            args.species,
+            args.topNHits
         )
         # breakpoint()
     else:

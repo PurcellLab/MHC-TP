@@ -18,11 +18,11 @@ setup(
         "opencv-python",
         "altair==5.5.0",
         "vl-convert-python==1.7.0",
-        "ipykernel",
-        "scipy",
-        "beautifulsoup4",
-        "requests",
-        "numba"
+        "ipykernel==6.30.0",
+        "scipy==1.16.1",
+        "beautifulsoup4==4.13.4",
+        "requests==2.32.5",
+        "numba==0.61.2"
     ],
     entry_points={
         "console_scripts": [

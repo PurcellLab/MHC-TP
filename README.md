@@ -40,11 +40,6 @@ cd HLA-PepClust/
       .\hlapepclust-env\Scripts\activate
       ```
 
-3. **Upgrade `pip`**  
-    ```bash
-    pip install --upgrade pip
-    ```
-
 ## Installing Dependencies  
 
 1. **Navigate to the project directory** (if not already in it)  
@@ -87,12 +82,13 @@ clust-search <input_data_path> <reference_data_path> \
 
 ```bash
 clust-search data/D90_HLA_3844874 data/ref_data/Gibbs_motifs_human/output_matrices_human \
-  --hla_types A0201,A0101,B1302,B3503,C0401 \
-  --n_clusters 6 \
-  --species human \
-  --output test_results \
-  --processes 4 \
-  --threshold 0.6 
+  --hla_types A0201,A0101,B1302,B3503,C0401 \   # Specify list of HLA alleles to search
+  --n_clusters 6 \                               # Restrict analysis to 6 Gibbs clusters
+  --species human \                              # Species to evaluate [human, mouse]
+  --output My_results_directory \                # Directory where results will be saved
+  --processes 4 \                                # Number of parallel processes to use
+  --threshold 0.7 \                              # Correlation threshold for motif matching
+  --topNHits 3                                   # Report top-N HLA matches for each Gibbs motif
 ```
 
 ## Command Line Arguments  
