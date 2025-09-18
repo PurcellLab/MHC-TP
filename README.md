@@ -145,7 +145,7 @@ Example of `input` folder path:
 
 ### Citation
 
-If you use **MHC-TP / HLA-PepClust** in your research, please cite:
+If you use **MHC-TP** in your research, please cite:
 
 **Immunolyser 2.0: an advanced computational pipeline for comprehensive analysis of immunopeptidomic data**
 Prithvi Raj Munday¹,†, Sanjay S.G. Krishna¹,†, Joshua Fehring¹, Nathan P. Croft¹, Anthony W. Purcell¹, Chen Li¹,², and Asolina Braun¹

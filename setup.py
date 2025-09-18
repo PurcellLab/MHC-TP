@@ -15,7 +15,7 @@ setup(
         "seaborn==0.13.2",
         "matplotlib==3.9.4",
         "rich-argparse==1.7.0",
-        "opencv-python",
+        "opencv-python==4.12.0.88",
         "altair==5.5.0",
         "vl-convert-python==1.7.0",
         "ipykernel==6.30.0",

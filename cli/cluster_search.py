@@ -1835,7 +1835,6 @@ class ClusterSearch:
         """
         Renders the complete HTML for all clustered results with carousels and necessary JavaScript.
         """
-        
         html_card = """
                 <div class="container py-4">
                 <div class="card">
@@ -2007,17 +2006,19 @@ class ClusterSearch:
   <script src="https://cdn.datatables.net/2.2.2/js/dataTables.js"></script>
   <script src ="https://cdn.datatables.net/2.2.2/js/dataTables.bootstrap5.js"></script>
 
-<footer class="text-body-secondary py-5">
+    <footer class="text-body-secondary py-5">
     <div class="container">
-      <p class="float-end mb-1">
+        <p class="float-end mb-1">
         <a href="#">Back to top</a>
-      </p>
-      <p class="mb-1"> Clust-Search v{{version}}</p>
-      <p class="mb-1"> Li Lab / Purcell Lab, Monash University&copy; 2025,please refere git repo for more information</p>
-      <p class="mb-0">github<a href="https://github.com/Sanpme66/HLA-PepClust">Visit git hub the homepage</a> or read our <a
-          href="https://github.com/Sanpme66/HLA-PepClust">getting started guide</a>.</p>
+        </p>
+        <p class="mb-1">MHC-TP v{{version}}</p>
+        <p class="mb-1">Li Lab / Purcell Lab, Monash University &copy; 2025. Please refer to the GitHub repository for more information.</p>
+        <p class="mb-0">
+        GitHub: <a href="https://github.com/PurcellLab/MHC-TP" target="_blank">Visit the homepage</a> or read our <a href="https://github.com/PurcellLab/MHC-TP#readme" target="_blank">getting started guide</a>.
+        </p>
     </div>
-  </footer>
+    </footer>
+
   <script>
    $(document).ready(function() {
     $('#correlation_table').DataTable();
@@ -2967,7 +2968,7 @@ def run_cluster_search(args):
         "[bold red]Stage 2/2: Finding best matching Naturally presented HLA ."
     )
     # if args.output_folder is None:
-    cluster_search_html.plot_heatmap(args.output)
+    # cluster_search_html.plot_heatmap(args.output)
 
     # cluster_search.console.rule("[bold red]Stage 3/4: Cheking the HLA.")
 
