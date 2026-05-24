@@ -1,0 +1,9 @@
+{
+    "human_classii": {
+        "path": "Gibbs_motifs_human_classII",
+        "matrix": "matrices",
+        "motif": "motif",
+        "allotypes": "allotypes/hla_classII_data.csv",
+        "ref_data": "data/ref_data"
+    }
+}

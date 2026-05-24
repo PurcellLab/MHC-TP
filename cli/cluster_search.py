@@ -1305,7 +1305,7 @@ class ClusterSearch:
 
     def render_hla_section(self, hla_name, corr, best_cluster_img, naturally_presented_img,kld_clust_group_kld):
         
-        if str(self.species).lower() in ("human", "human_classii"):
+        if str(self.species).lower() == "human":
             hla_name = f"HLA-{hla_name}"
         else:
             hla_name
