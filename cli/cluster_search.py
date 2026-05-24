@@ -1305,7 +1305,7 @@ class ClusterSearch:
 
     def render_hla_section(self, hla_name, corr, best_cluster_img, naturally_presented_img,kld_clust_group_kld):
         
-        if str(self.species).lower() == "human":
+        if str(self.species).lower() in ("human", "human_classii"):
             hla_name = f"HLA-{hla_name}"
         else:
             hla_name
@@ -1612,7 +1612,7 @@ class ClusterSearch:
                 cluster_id = filename.split('gibbs.')[1].split('.')[0]
                 group_num, cluster_num = map(int, cluster_id.split('of'))
                 
-                hla = os.path.basename(col_path).replace('.txt', '').split('_')[1] if self.species == 'human' else os.path.basename(col_path).replace('.txt', '')
+                hla = os.path.basename(col_path).replace('.txt', '').split('_')[1] if self.species == 'human' else os.path.basename(col_path).replace('.txt', '')  # human_classii/mouse* use full basename
                 
                 if cluster_num not in result:
                     result[cluster_num] = {}
@@ -2857,7 +2857,7 @@ def run_cluster_search(args):
         "[bold red]Stage 1/2: Data processing for correlation matrices."
     )
     # print(args.species)
-    if str(args.species).lower() in ["mouse", "human"]:
+    if str(args.species).lower() in ["mouse", "human", "human_classii", "mouse_classii"]:
         CONSOLE.log(
             f"Species provided: [bold yellow]{args.species}", style="bold green")
         CONSOLE.log(

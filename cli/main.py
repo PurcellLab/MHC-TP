@@ -122,7 +122,7 @@ def main():
         "--species",
         type=str,
         default="human",
-        help="Species to search [Human, Mouse] for (default: human).",
+        help="Species to search [human, mouse, human_classii, mouse_classii] (default: human).",
     )
 
     parser.add_argument(

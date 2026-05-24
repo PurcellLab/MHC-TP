@@ -26,6 +26,22 @@ def _prase_config_file(config_file):
                 "motif": "motif",
                 "allotypes": "allotypes/mhc_data.csv",
                 "ref_data": "data/ref_data"
+            },
+
+            "human_classii": {
+                "path": "Gibbs_motifs_human_classII",
+                "matrix": "matrices",
+                "motif": "motif",
+                "allotypes": "allotypes/hla_classII_data.csv",
+                "ref_data": "data/ref_data"
+            },
+
+            "mouse_classii": {
+                "path": "Gibbs_motifs_mouse_classII",
+                "matrix": "matrices",
+                "motif": "motif",
+                "allotypes": "allotypes/mhc_classII_data.csv",
+                "ref_data": "data/ref_data"
             }
         }
         print(default_config)
@@ -68,6 +84,15 @@ def _HLA_liist(config):
             allotypes['species'] = species
         elif species == "mouse":
             allotypes.rename(columns={"formatted_MHC":"formatted_allotypes","MHC":"allotypes"}, inplace=True)
+            allotypes['motif'] = allotypes['formatted_allotypes'] + ".png"
+            allotypes['species'] = species
+        elif species in ("human_classii", "mouse_classii"):
+            # Class II allotype files: columns formatted_HLA/HLA (human) or formatted_MHC/MHC (mouse)
+            # Motif filenames use the formatted allotype name directly (no HLA_ prefix)
+            if "formatted_HLA" in allotypes.columns:
+                allotypes.rename(columns={"formatted_HLA": "formatted_allotypes", "HLA": "allotypes"}, inplace=True)
+            elif "formatted_MHC" in allotypes.columns:
+                allotypes.rename(columns={"formatted_MHC": "formatted_allotypes", "MHC": "allotypes"}, inplace=True)
             allotypes['motif'] = allotypes['formatted_allotypes'] + ".png"
             allotypes['species'] = species
         else:

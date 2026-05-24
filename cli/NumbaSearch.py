@@ -66,10 +66,12 @@ class npClusterSearch:
             if matrix is not None:
                 matrices_data.append(matrix)
                 
-                # Extract HLA info
+                # Extract HLA info — human Class I filenames have HLA_ prefix (e.g. HLA_A0201.txt);
+                # Class II and mouse filenames use the full basename directly.
                 if species.lower() == 'human':
                     hla = os.path.basename(mat_path).replace('.txt', '').split('_')[1] if '_' in mat_path else os.path.basename(mat_path).replace('.txt', '')
                 else:
+                    # human_classii, mouse, mouse_classii — use full basename as identifier
                     hla = os.path.basename(mat_path).replace('.txt', '')
                 
                 metadata_list.append({
