@@ -192,6 +192,12 @@ def main(argv=None):
     )
     br.add_argument("--seq2logo-path", default=os.environ.get("SEQ2LOGO_PATH"))
     br.add_argument("--seq2logo-python", default=os.environ.get("SEQ2LOGO_PYTHON"))
+    br.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="parallel Seq2Logo render workers (default 1)",
+    )
 
     fp = sub.add_parser(
         "fetch", help="download prebuilt reference parquets to the data dir", **fmt
@@ -251,6 +257,7 @@ def main(argv=None):
             with_logos=args.with_logos,
             seq2logo_path=args.seq2logo_path,
             seq2logo_python=args.seq2logo_python,
+            workers=args.workers,
         )
         print(f"{args.species}: class I={n_i}, class II={n_ii} -> {args.out_parquet}")
         return

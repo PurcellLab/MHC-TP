@@ -87,6 +87,7 @@ def build_pack_parquet(
     with_logos=False,
     seq2logo_path=None,
     seq2logo_python=None,
+    workers=1,
 ):
     """Build a parquet from a pack for one species. mhc_class in {"I","II"}.
 
@@ -95,7 +96,8 @@ def build_pack_parquet(
     class II ``log_odds/<pseudo>.txt``. When ``with_logos`` is set, a Seq2Logo
     reference logo is rendered from the FREQUENCY matrix (class I
     ``freq_mat_el/<pseudo>_freq.mat``, class II ``freq_mat/<pseudo>_freq.mat``)
-    and embedded in a ``logo`` column.
+    and embedded in a ``logo`` column. Logo rendering is parallelised across
+    ``workers`` threads (each runs one Seq2Logo subprocess).
     """
     base = Path(pack_dir) / "all_logos"
     if mhc_class == "I":
@@ -104,7 +106,7 @@ def build_pack_parquet(
     else:
         mat_dir, freq_dir = base / "log_odds", base / "freq_mat"
         pairs = _pairs_class_ii(base)
-    rows, seen = [], set()
+    rows, seen, logo_tasks = [], set(), []
     for allele, pseudo in pairs:
         info = classify_allele(allele)
         if info is None or info.species != species or info.mhc_class != mhc_class:
@@ -115,25 +117,40 @@ def build_pack_parquet(
         if mat is None:
             continue
         seen.add(info.formatted)
-        row = {
-            "allotype": info.allotype,
-            "formatted": info.formatted,
-            "mhc_class": info.mhc_class,
-            "locus": info.locus,
-            "n_positions": int(mat.shape[0]),
-            "matrix": mat.reshape(-1).tolist(),
-            "source": source,
-        }
+        rows.append(
+            {
+                "allotype": info.allotype,
+                "formatted": info.formatted,
+                "mhc_class": info.mhc_class,
+                "locus": info.locus,
+                "n_positions": int(mat.shape[0]),
+                "matrix": mat.reshape(-1).tolist(),
+                "source": source,
+            }
+        )
         if with_logos:
-            from hla_pepclust.db.logos import reference_logo_bytes
+            logo_tasks.append(
+                (len(rows) - 1, freq_dir / (pseudo + "_freq.mat"), info.allotype)
+            )
 
-            row["logo"] = reference_logo_bytes(
-                freq_dir / (pseudo + "_freq.mat"),
+    if logo_tasks:
+        from concurrent.futures import ThreadPoolExecutor
+
+        from hla_pepclust.db.logos import reference_logo_bytes
+
+        def _render(task):
+            idx, freq_file, title = task
+            return idx, reference_logo_bytes(
+                freq_file,
                 seq2logo_path=seq2logo_path,
                 python_exe=seq2logo_python,
-                title=info.allotype,
+                title=title,
             )
-        rows.append(row)
+
+        with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+            for idx, data in pool.map(_render, logo_tasks):
+                rows[idx]["logo"] = data
+
     write_reference(pd.DataFrame(rows), out_parquet)
     return len(rows)
 
@@ -148,11 +165,12 @@ def build_species_reference(
     with_logos=False,
     seq2logo_path=None,
     seq2logo_python=None,
+    workers=1,
 ):
     """Build one ``<species>.parquet`` combining class I + class II from the packs.
 
     Returns (n_class_i, n_class_ii). Pass ``with_logos`` (+ Seq2Logo paths) to
-    embed reference logos.
+    embed reference logos; ``workers`` parallelises logo rendering.
     """
     import tempfile
 
@@ -162,6 +180,7 @@ def build_species_reference(
         with_logos=with_logos,
         seq2logo_path=seq2logo_path,
         seq2logo_python=seq2logo_python,
+        workers=workers,
     )
     n_i = build_pack_parquet(class_i_pack, "I", species, pi, source_i, **logo_kw)
     n_ii = build_pack_parquet(class_ii_pack, "II", species, pii, source_ii, **logo_kw)

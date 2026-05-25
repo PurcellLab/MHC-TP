@@ -12,9 +12,9 @@
 #   - packs extracted:  bash scripts/fetch_sources.sh
 #
 #SBATCH --job-name=hlapep-refbuild
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=16
 #SBATCH --mem=16G
-#SBATCH --time=12:00:00
+#SBATCH --time=04:00:00
 #SBATCH --output=slurm-refbuild-%j.out
 
 set -euo pipefail
@@ -30,7 +30,8 @@ mkdir -p "$OUT"
 for SP in human mouse; do
     echo ">>> building ${SP}.parquet (--with-logos)"
     pixi run clust-search build-ref "$SP" "$C1" "$C2" "$OUT/${SP}.parquet" \
-        --with-logos --seq2logo-path "$SEQ2LOGO_PATH" --seq2logo-python "$PY27"
+        --with-logos --seq2logo-path "$SEQ2LOGO_PATH" --seq2logo-python "$PY27" \
+        --workers "${SLURM_CPUS_PER_TASK:-16}"
 done
 
 echo ">>> done. recompute these into src/hla_pepclust/refdata/reference_manifest.tsv:"
