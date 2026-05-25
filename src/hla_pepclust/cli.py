@@ -199,6 +199,18 @@ def main(argv=None):
     fp.add_argument("-s", "--species", default="all", choices=["human", "mouse", "all"])
     fp.add_argument("-d", "--dest", default=None, help="override the data dir")
 
+    ep = sub.add_parser(
+        "export-logos",
+        help="export embedded reference logos from a parquet to PNG files",
+        **fmt,
+    )
+    ep.add_argument(
+        "-r", "--reference", required=True, help="path to <species>.parquet"
+    )
+    ep.add_argument(
+        "-o", "--output", required=True, help="output directory for PNG files"
+    )
+
     args = parser.parse_args(argv)
     if args.command == "fetch":
         from hla_pepclust.refdata.fetch import data_dir, fetch
@@ -207,6 +219,12 @@ def main(argv=None):
         print(f"fetched {len(paths)} file(s) to {args.dest or data_dir()}:")
         for p in paths:
             print(f"  {p}")
+        return
+    if args.command == "export-logos":
+        from hla_pepclust.refdata.export import export_logos
+
+        n = export_logos(args.reference, args.output)
+        print(f"exported {n} reference logos to {args.output}")
         return
     if args.command == "build-db":
         from hla_pepclust.db.construct import build_species_parquet
