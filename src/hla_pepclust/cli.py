@@ -88,7 +88,12 @@ def main(argv=None):
 
     s = sub.add_parser("search", help="run the cluster search (default)")
     s.add_argument("gibbs_folder")
-    s.add_argument("-r", "--reference", required=True, help="path to <species>.parquet")
+    s.add_argument(
+        "-r",
+        "--reference",
+        default=None,
+        help="path to <species>.parquet (default: fetched data dir; see `fetch`)",
+    )
     s.add_argument("-s", "--species", default="human")
     s.add_argument("-t", "--threshold", type=float, default=0.70)
     s.add_argument("--topNHits", type=int, default=3)
@@ -128,7 +133,21 @@ def main(argv=None):
     br.add_argument("class_ii_pack", help="extracted NetMHCIIpan class II pack dir")
     br.add_argument("out_parquet")
 
+    fp = sub.add_parser(
+        "fetch", help="download prebuilt reference parquets to the data dir"
+    )
+    fp.add_argument("-s", "--species", default="all", choices=["human", "mouse", "all"])
+    fp.add_argument("-d", "--dest", default=None, help="override the data dir")
+
     args = parser.parse_args(argv)
+    if args.command == "fetch":
+        from hla_pepclust.refdata.fetch import data_dir, fetch
+
+        paths = fetch(args.species, args.dest)
+        print(f"fetched {len(paths)} file(s) to {args.dest or data_dir()}:")
+        for p in paths:
+            print(f"  {p}")
+        return
     if args.command == "build-db":
         from hla_pepclust.db.construct import build_species_parquet
 
@@ -152,9 +171,12 @@ def main(argv=None):
         print(f"{args.species}: class I={n_i}, class II={n_ii} -> {args.out_parquet}")
         return
     if args.command == "search":
+        from hla_pepclust.refdata.fetch import resolve_reference
+
+        reference = str(resolve_reference(args.species, args.reference))
         run_search(
             args.gibbs_folder,
-            args.reference,
+            reference,
             args.species,
             args.output,
             threshold=args.threshold,
