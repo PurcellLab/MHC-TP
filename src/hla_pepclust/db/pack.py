@@ -1,6 +1,6 @@
 """DEV-ONLY: ingest NetMHCpan reference packs into per-species parquets."""
 from __future__ import annotations
-import os, re
+import re
 from dataclasses import dataclass
 from pathlib import Path
 import pandas as pd
