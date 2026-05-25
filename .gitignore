@@ -41,3 +41,6 @@ hla_data.json
 data/ref/*
 
 uMAP.py
+
+# pixi local environment (lockfile pixi.lock is committed; the env dir is not)
+.pixi/
