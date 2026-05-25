@@ -85,7 +85,7 @@
       <input type="radio" name="viz_tabs" role="tab" class="tab" aria-label="Combined" checked
              data-pane="combined" />
       <div role="tabpanel" class="tab-content pt-4">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="panel p-3">
             <div class="text-sm text-neutral-500 mb-2 text-center">Heatmap</div>
             <div id="heatmap-container-combined" class="viz"></div>
@@ -119,7 +119,7 @@
   {% for sec in cluster_sections %}
   <section class="space-y-4">
     <h2 class="section-title text-lg">Results for {{ sec.n_clusters }} clusters</h2>
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     {% for c in sec.groups %}
       <div class="panel p-4 space-y-3">
         <div class="text-sm text-neutral-700">
@@ -127,7 +127,7 @@
           &middot; PCC {{ '%.2f'|format(c.correlation) }}
           {% if c.kld is not none %}&middot; KLD {{ '%.2f'|format(c.kld) }}{% endif %}
         </div>
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <div class="text-xs text-center text-neutral-500 mb-1">Gibbs Cluster</div>
             {% if c.cluster_logo %}<img class="logo-img" src="{{ c.cluster_logo }}" alt="cluster logo">{% endif %}
@@ -204,6 +204,20 @@ document.querySelectorAll('input[name="viz_tabs"]').forEach(tab => {
       createNetwork("network-container-combined", threshold);
     }
   });
+});
+
+// Re-render visualizations on resize/rotate (debounced) so they stay responsive.
+let _resizeTimer;
+window.addEventListener("resize", () => {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => {
+    createHeatmap("heatmap-container-combined", threshold);
+    createNetwork("network-container-combined", threshold);
+    const active = document.querySelector('input[name="viz_tabs"]:checked');
+    const pane = active ? active.getAttribute("data-pane") : "combined";
+    if (pane === "heatmap") createHeatmap("heatmap-container-single", threshold);
+    else if (pane === "network") createNetwork("network-container-single", threshold);
+  }, 200);
 });
 
 // Create heatmap visualization
