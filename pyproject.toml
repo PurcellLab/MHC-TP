@@ -11,6 +11,30 @@ license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.9,<3.12"
 authors = [{ name = "Sanjay S G Krishna" }]
+maintainers = [{ name = "Sanjay S G Krishna" }]
+keywords = [
+    "immunopeptidomics",
+    "HLA",
+    "MHC",
+    "immunology",
+    "mass-spectrometry",
+    "bioinformatics",
+    "gibbscluster",
+    "peptide-clustering",
+    "binding-motif",
+    "epitope",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Operating System :: OS Independent",
+]
 dependencies = [
     "numpy>=1.26",
     "pandas>=2.2",
@@ -31,6 +55,13 @@ dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.10"]
 
 [project.scripts]
 mhc-tp = "mhc_tp.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/PurcellLab/MHC-TP"
+Documentation = "https://purcelllab.github.io/MHC-TP/"
+Repository = "https://github.com/PurcellLab/MHC-TP"
+Issues = "https://github.com/PurcellLab/MHC-TP/issues"
+Changelog = "https://github.com/PurcellLab/MHC-TP/releases"
 
 [tool.hatch.version]
 source = "vcs"
