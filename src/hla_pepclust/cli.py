@@ -9,6 +9,7 @@ from pathlib import Path
 import pandas as pd
 
 from hla_pepclust import __version__
+from hla_pepclust.console import CONSOLE, banner, results_table
 from hla_pepclust.io.matrices import parse_matrix
 from hla_pepclust.refdata.parquet_io import read_reference
 
@@ -47,8 +48,19 @@ def run_search(
     from hla_pepclust.engine.search import search
 
     ref = read_reference(reference)
+    CONSOLE.log(
+        f"Loaded reference [bold]{len(ref)}[/bold] {species} allotypes "
+        f"(class I/II) from {reference}",
+        style="cyan",
+    )
     gibbs = _load_gibbs_matrices(gibbs_dir)
+    CONSOLE.log(
+        f"Searching [bold]{len(gibbs)}[/bold] Gibbs cluster matrices "
+        f"(threshold {threshold})",
+        style="cyan",
+    )
     cd = search(ref, gibbs, threshold=threshold, top_n=top_n, hla_filter=hla_filter)
+    CONSOLE.log(f"Found [bold]{len(cd)}[/bold] matches above threshold", style="green")
 
     rows = [
         {"cluster": name.replace(".mat", ""), "hla": hla, "correlation": round(corr, 4)}
@@ -62,6 +74,9 @@ def run_search(
     out_dir = Path(output) / "clust_result"
     out_dir.mkdir(parents=True, exist_ok=True)
     df.to_csv(out_dir / "correlations.csv", index=False)
+    if len(df):
+        results_table(df, threshold=threshold)
+    CONSOLE.log(f"Results written to {out_dir}", style="green")
 
     if make_html:
         from hla_pepclust.io.kld import read_kld
@@ -80,13 +95,20 @@ def run_search(
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog="clust-search", description="HLA-PepClust")
+    from rich_argparse import RichHelpFormatter
+
+    fmt = {"formatter_class": RichHelpFormatter}
+    parser = argparse.ArgumentParser(
+        prog="clust-search",
+        description="HLA-PepClust: cluster immunopeptidomics peptides by HLA/MHC motif",
+        **fmt,
+    )
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {__version__}"
     )
     sub = parser.add_subparsers(dest="command")
 
-    s = sub.add_parser("search", help="run the cluster search (default)")
+    s = sub.add_parser("search", help="run the cluster search (default)", **fmt)
     s.add_argument("gibbs_folder")
     s.add_argument(
         "-r",
@@ -102,7 +124,7 @@ def main(argv=None):
         "--no-html", action="store_true", help="skip the HTML report (CSV only)"
     )
 
-    b = sub.add_parser("build-db", help="DEV: build a reference parquet")
+    b = sub.add_parser("build-db", help="DEV: build a reference parquet", **fmt)
     b.add_argument("db_csv")
     b.add_argument("matrix_root")
     b.add_argument("species")
@@ -127,6 +149,7 @@ def main(argv=None):
     br = sub.add_parser(
         "build-ref",
         help="DEV: build a combined <species>.parquet from class I + II packs",
+        **fmt,
     )
     br.add_argument("species")
     br.add_argument("class_i_pack", help="extracted NetMHCpan class I pack dir")
@@ -141,7 +164,7 @@ def main(argv=None):
     br.add_argument("--seq2logo-python", default=os.environ.get("SEQ2LOGO_PYTHON"))
 
     fp = sub.add_parser(
-        "fetch", help="download prebuilt reference parquets to the data dir"
+        "fetch", help="download prebuilt reference parquets to the data dir", **fmt
     )
     fp.add_argument("-s", "--species", default="all", choices=["human", "mouse", "all"])
     fp.add_argument("-d", "--dest", default=None, help="override the data dir")
@@ -186,6 +209,7 @@ def main(argv=None):
     if args.command == "search":
         from hla_pepclust.refdata.fetch import resolve_reference
 
+        banner()
         reference = str(resolve_reference(args.species, args.reference))
         run_search(
             args.gibbs_folder,
