@@ -1,0 +1,65 @@
+name: Release
+
+# Publishing a GitHub Release builds the package and uploads it to PyPI.
+# Mark the Release as a "pre-release" to route it to TestPyPI instead, so you
+# can `pip install -i https://test.pypi.org/simple/ hla-pepclust` and verify
+# before cutting the real thing. The version comes from the release tag via
+# hatch-vcs, so tag final releases like `v2.0.0` and pre-releases like
+# `v2.0.0rc1`.
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build sdist + wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # hatch-vcs derives the version from tags/history
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+          twine check dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish-testpypi:
+    name: Publish to TestPyPI (pre-releases)
+    needs: build
+    if: github.event.release.prerelease
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: build
+    if: ${{ ! github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
