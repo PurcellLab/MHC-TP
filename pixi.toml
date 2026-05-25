@@ -47,9 +47,8 @@ default = { features = ["dev"], solve-group = "main" }
 seq2logo = { features = ["seq2logo"], no-default-feature = true }
 
 [tasks]
+# Editable-install the package into the env (run once after `pixi install`).
+dev-install = "pip install -e ."
 test = "pytest -q"
-fmt = "black cli"
-lint = "ruff check cli"
-cli = "python -m cli.main"
-# Dev-only: build the reference motif/array DB once. Not part of the user flow.
-build-db = "python -m cli.main --database data/config.json"
+fmt = "black src tests"
+lint = "ruff check src tests"
