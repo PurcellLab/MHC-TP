@@ -1,0 +1,54 @@
+[workspace]
+name = "hla-pepclust"
+version = "1.1.1-beta"
+description = "Cluster immunopeptidomics peptides by HLA binding motif, with an interactive HTML report"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+# Scope (user decision 2026-05-25): the user-facing package is ONLY
+#   (1) cluster search  — cli/NumbaSearch.py (numba JIT correlation)
+#   (2) results HTML    — report rendering + cli/html_config.py
+# Everything else is noise and excluded from the runtime: HLAfreq.py (web
+# scraping), uMAP.py (dimensionality reduction), the Flask/Celery web app, and
+# the dead altair correlation-plot path. DB construction is DEV-ONLY (run once),
+# not shipped to the end user — see the [feature.dev] task below.
+[dependencies]
+python = "3.11.*"
+numpy = ">=1.26"
+pandas = ">=2.2"
+numba = ">=0.60"          # cli/NumbaSearch.py — the fast cluster engine
+matplotlib = ">=3.9"      # report heatmap + KLD/PCC plot
+seaborn = ">=0.13"        # report heatmap
+pillow = ">=10"           # report sequence-logo image grid
+rich = ">=13"             # console UI
+rich-argparse = ">=1.7"   # CLI help
+jinja2 = ">=3.1"          # HTML report templating
+pyarrow = ">=15"          # reference Parquet read/write
+logomaker = ">=0.8"       # render reference + cluster sequence logos
+platformdirs = ">=4"      # resolve user data dir for fetch/refdata
+
+# Dev/test tools + the run-once DB construction step (NOT a user runtime dep).
+[feature.dev.dependencies]
+pytest = ">=8"
+black = ">=25"
+ruff = ">=0.6"
+pip = ">=24"
+hatchling = ">=1.25"
+
+# Dev-only python2.7 env for Seq2Logo 2.1 (reference-logo generation). Separate
+# solve group from the main 3.11 env.
+[feature.seq2logo.dependencies]
+python = "2.7.*"
+numpy = "1.16.*"   # last py2.7-compatible numpy; Seq2Logo needs >=1.7
+# ghostscript: use the system `gs` (EPS->PNG/PDF); not pinned here.
+
+[environments]
+default = { features = ["dev"], solve-group = "main" }
+seq2logo = { features = ["seq2logo"], no-default-feature = true }
+
+[tasks]
+# Editable-install the package into the env (run once after `pixi install`).
+dev-install = "pip install -e ."
+test = "pytest -q"
+fmt = "black src tests"
+lint = "ruff check src tests"

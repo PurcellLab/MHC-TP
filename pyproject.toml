@@ -1,21 +1,43 @@
-[tool.poetry]
-name = "HLA-cluster-search"
-version = "0.1.0-dev"
-description = "CLI tool for cluster search"
-authors = ["Sanjay SG Krishna sanjya.sondekopppagopalakrishna@monash.edu"]
-packages = [{ include = "cli" }]
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
 
-[tool.poetry.dependencies]
-python = ">=3.9,<=3.11"
-rich = "^13.0"
-pandas = "^2.2.3"
-matplotlib = "^3.9.4"
-seaborn = "^0.13.2"
-rich-argparse = "^1.7.0"
+[project]
+name = "hla-pepclust"
+dynamic = ["version"]
+description = "Cluster immunopeptidomics peptides by HLA/MHC binding motif, with an interactive HTML report"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.9,<3.12"
+authors = [{ name = "Sanjay S G Krishna" }]
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "numba>=0.60",
+    "pyarrow>=15",
+    "matplotlib>=3.9",
+    "seaborn>=0.13",
+    "logomaker>=0.8",
+    "pillow>=10",
+    "jinja2>=3.1",
+    "rich>=13",
+    "rich-argparse>=1.7",
+    "platformdirs>=4",
+]
 
-[tool.poetry.scripts]
-cluster-search = "cli.main:main"
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.10"]
 
-[tool.poetry.group.dev.dependencies]
-black = "^25.1.0"
+[project.scripts]
+clust-search = "hla_pepclust.cli:main"
 
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hla_pepclust"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["slow: heavier tests (large reference / memory stress)"]

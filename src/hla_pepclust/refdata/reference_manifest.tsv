@@ -1,0 +1,9 @@
+# Prebuilt reference parquets — downloaded by `clust-search fetch`.
+# Built with `clust-search build-ref <species> <classI_pack> <classII_pack> <out>`
+# (add --with-logos to embed Seq2Logo reference logos), then uploaded as a
+# GitHub release asset. On each release: rebuild, recompute sha256, bump the
+# release tag in the url. (sha256 below is for the current matrices-only build;
+# rebuilding with --with-logos changes it.)
+species	filename	sha256	url
+human	human.parquet	e26a3bdad2e6e8bb93979b3cc2ccd01585f04393315752b58090d8cf537c4f36	https://github.com/PurcellLab/MHC-TP/releases/download/refdata-2025/human.parquet
+mouse	mouse.parquet	870657628defb9e0660b7e5915131118558a03fc6f56d5d9ced3b052f1e3f2dc	https://github.com/PurcellLab/MHC-TP/releases/download/refdata-2025/mouse.parquet

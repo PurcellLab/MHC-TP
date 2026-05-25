@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="HLA-PepClust cluster search results">
+<title>MHC-TP &middot; HLA-PepClust {{ version }}</title>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<style>
+  :root {
+    --text: #2b2b2b;
+    --muted: #6b7280;
+    --faint: #9ca3af;
+    --border: #e5e7eb;
+    --bg: #f9fafb;
+    --panel: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+                 Arial, "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.5;
+    font-size: 15px;
+    min-height: 100vh;
+  }
+  .mono {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+                 "Liberation Mono", monospace;
+  }
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1.25rem;
+  }
+  section, header { margin-bottom: 2.5rem; }
+
+  /* Header */
+  header { margin-bottom: 2.5rem; }
+  .header-row {
+    display: flex;
+    align-items: baseline;
+    gap: .75rem;
+  }
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    margin: 0;
+  }
+  .header-version {
+    font-size: .875rem;
+    color: var(--muted);
+  }
+  .header-sub {
+    font-size: .875rem;
+    color: var(--muted);
+    margin: .25rem 0 0;
+  }
+
+  .section-title {
+    font-weight: 500;
+    letter-spacing: .01em;
+    font-size: 1.125rem;
+    margin: 0 0 .75rem;
+  }
+
+  /* Panels */
+  .panel {
+    border: 1px solid var(--border);
+    border-radius: .5rem;
+    background: var(--panel);
+  }
+  .panel-pad { padding: 1rem; }
+  .overflow-x { overflow-x: auto; }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .875rem;
+  }
+  thead th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--muted);
+    padding: .6rem .75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody td {
+    padding: .5rem .75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  .cell-index { color: var(--faint); }
+  .cell-strong { font-weight: 500; }
+  .cell-muted { color: var(--muted); }
+  .dot {
+    display: inline-block;
+    width: .5rem;
+    height: .5rem;
+    border-radius: 9999px;
+    vertical-align: middle;
+    margin-right: .35rem;
+  }
+
+  /* Threshold control */
+  .threshold-row {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    font-size: .875rem;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+  .threshold-row label { white-space: nowrap; }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    max-width: 20rem;
+    height: 4px;
+    border-radius: 9999px;
+    background: var(--border);
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 9999px;
+    background: var(--text);
+    border: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 9999px;
+    background: var(--text);
+    border: none;
+    cursor: pointer;
+  }
+  #threshold-value {
+    width: 3rem;
+    color: var(--text);
+  }
+
+  /* Tabs (radio + label, framework-free) */
+  .tabs { width: 100%; }
+  .tablist {
+    display: flex;
+    gap: .25rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1rem;
+  }
+  .tabs input[name="viz_tabs"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+  .tab-label {
+    padding: .5rem .9rem;
+    font-size: .875rem;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    user-select: none;
+  }
+  .tab-label:hover { color: var(--text); }
+  .tab-content { display: none; }
+  /* Show the pane whose radio is checked. Order in markup:
+     combined-input, combined-pane, heatmap-input, heatmap-pane, network-input, network-pane.
+     Highlight the active tab label. */
+  #tab-combined:checked ~ .tablist label[for="tab-combined"],
+  #tab-heatmap:checked ~ .tablist label[for="tab-heatmap"],
+  #tab-network:checked ~ .tablist label[for="tab-network"] {
+    color: var(--text);
+    border-bottom-color: var(--text);
+    font-weight: 500;
+  }
+  #tab-combined:checked ~ #pane-combined,
+  #tab-heatmap:checked ~ #pane-heatmap,
+  #tab-network:checked ~ #pane-network {
+    display: block;
+  }
+
+  /* Grid layouts */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .logo-pair {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: .75rem;
+  }
+  @media (min-width: 768px) {
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .card-grid { grid-template-columns: 1fr 1fr; }
+    .logo-pair { grid-template-columns: 1fr 1fr; }
+  }
+
+  .viz-title {
+    font-size: .875rem;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: .5rem;
+  }
+  .logo-img { width: 100%; height: auto; background: #fff; }
+  .logo-caption {
+    font-size: .75rem;
+    text-align: center;
+    color: var(--muted);
+    margin-bottom: .25rem;
+  }
+
+  /* Cards */
+  .card { padding: 1rem; }
+  .card-head {
+    font-size: .875rem;
+    color: #374151;
+    margin-bottom: .75rem;
+  }
+  .card-head .hla { font-weight: 500; }
+
+  /* Visualizations */
+  .viz { width: 100%; min-height: 420px; position: relative; }
+  .viz svg { display: block; }
+  .no-data {
+    text-align: center;
+    padding: 1rem;
+    color: var(--faint);
+    font-size: .875rem;
+  }
+  .tooltip-custom {
+    position: absolute; pointer-events: none; background: #fff;
+    border: 1px solid #d1d5db; border-radius: .375rem; padding: .4rem .55rem;
+    font-size: 12px; color: #2b2b2b; box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    z-index: 50;
+  }
+  .center-network-btn {
+    position: absolute; top: 8px; right: 8px; z-index: 10;
+    font: inherit;
+    font-size: .75rem;
+    padding: .2rem .5rem;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: .375rem;
+    cursor: pointer;
+  }
+  .center-network-btn:hover {
+    color: var(--text);
+    background: var(--bg);
+  }
+  .svg-container { overflow-x: auto; }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+    font-size: .75rem;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+</style>
+</head>
+<body>
+
+<main>
+
+  <!-- Header -->
+  <header>
+    <div class="header-row">
+      <h1>MHC-TP</h1>
+      <span class="header-version">HLA-PepClust v{{ version }}</span>
+    </div>
+    <p class="header-sub">Peptide cluster to allotype motif correlation report.</p>
+  </header>
+
+  <!-- Results table -->
+  <section>
+    <h2 class="section-title">Results</h2>
+    <div class="panel overflow-x">
+      <table id="correlation_table">
+        <thead>
+          <tr>
+            <th>#</th><th>Cluster</th><th>Best HLA/MHC</th><th>PCC</th><th>KLD</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for r in table_rows %}
+          <tr>
+            <td class="cell-index">{{ loop.index }}</td>
+            <td class="mono">{{ r.cluster }}</td>
+            <td class="cell-strong">{{ r.hla }}</td>
+            <td class="mono">
+              <span class="dot"
+                    style="background: {% if r.correlation >= 0.7 %}#4d8076{% elif r.correlation >= 0.5 %}#b08968{% else %}#b0b0b0{% endif %};"></span>{{ '%.3f'|format(r.correlation) }}
+            </td>
+            <td class="mono cell-muted">{{ '%.3f'|format(r.kld) if r.kld is not none else 'NA' }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Correlation analysis -->
+  <section>
+    <h2 class="section-title">Correlation Analysis</h2>
+
+    <div class="threshold-row">
+      <label for="threshold">PCC threshold</label>
+      <input id="threshold" type="range" min="0" max="1" step="0.01" value="0.70" />
+      <span id="threshold-value" class="mono">0.70</span>
+    </div>
+
+    <div class="tabs">
+      <input type="radio" name="viz_tabs" id="tab-combined" data-pane="combined" checked />
+      <input type="radio" name="viz_tabs" id="tab-heatmap" data-pane="heatmap" />
+      <input type="radio" name="viz_tabs" id="tab-network" data-pane="network" />
+
+      <div class="tablist" role="tablist">
+        <label class="tab-label" for="tab-combined">Combined</label>
+        <label class="tab-label" for="tab-heatmap">Heatmap</label>
+        <label class="tab-label" for="tab-network">Network</label>
+      </div>
+
+      <div class="tab-content" id="pane-combined">
+        <div class="grid-2">
+          <div class="panel panel-pad">
+            <div class="viz-title">Heatmap</div>
+            <div id="heatmap-container-combined" class="viz"></div>
+          </div>
+          <div class="panel panel-pad">
+            <div class="viz-title">Network</div>
+            <div id="network-container-combined" class="viz"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="pane-heatmap">
+        <div class="panel panel-pad">
+          <div id="heatmap-container-single" class="viz"></div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="pane-network">
+        <div class="panel panel-pad">
+          <div id="network-container-single" class="viz"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Per-cluster-count sections -->
+  {% for sec in cluster_sections %}
+  <section>
+    <h2 class="section-title">Results for {{ sec.n_clusters }} clusters</h2>
+    <div class="card-grid">
+    {% for c in sec.groups %}
+      <div class="panel card">
+        <div class="card-head">
+          Best matched allotype is <span class="hla">{{ c.hla }}</span>
+          &middot; PCC {{ '%.2f'|format(c.correlation) }}
+          {% if c.kld is not none %}&middot; KLD {{ '%.2f'|format(c.kld) }}{% endif %}
+        </div>
+        <div class="logo-pair">
+          <div>
+            <div class="logo-caption">Gibbs Cluster</div>
+            {% if c.cluster_logo %}<img class="logo-img" src="{{ c.cluster_logo }}" alt="cluster logo">{% endif %}
+          </div>
+          <div>
+            <div class="logo-caption">Reference Motif logo of {{ c.hla }}</div>
+            <img class="logo-img" src="{{ c.ref_logo }}" alt="reference logo">
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+
+  <footer>
+    HLA-PepClust v{{ version }} &middot; Li Lab / Purcell Lab, Monash University
+    &middot; references: NetMHCpan-4.2 / NetMHCIIpan-4.3, GibbsCluster, MHCMotifAtlas
+  </footer>
+</main>
+
+<script>
+const PCC = {{ pcc_json|safe }};
+// Adapt field names to those the ported D3 expects: d.Cluster, d.HLA, d.Correlation.
+const data = PCC;
+const simulations = {};
+
+const clusterColors = {
+  "1of2": "#FF7F00", "2of2": "#FF7F00",
+  "1of3": "#984EA3", "2of3": "#984EA3", "3of3": "#984EA3",
+  "1of4": "#4DAF4A", "2of4": "#4DAF4A", "3of4": "#4DAF4A", "4of4": "#4DAF4A",
+  "1of5": "#377EB8", "2of5": "#377EB8", "3of5": "#377EB8", "4of5": "#377EB8", "5of5": "#377EB8",
+  "1of6": "#E41A1C", "2of6": "#E41A1C", "3of6": "#E41A1C", "4of6": "#E41A1C", "5of6": "#E41A1C", "6of6": "#E41A1C"
+};
+
+// Tooltip
+const tooltip = d3.select("body")
+  .append("div")
+  .attr("class", "tooltip-custom")
+  .style("opacity", 0);
+
+// Current threshold value
+let threshold = 0.70;
+
+// Initialize visualizations
+createHeatmap("heatmap-container-combined", threshold);
+createNetwork("network-container-combined", threshold);
+createHeatmap("heatmap-container-single", threshold);
+createNetwork("network-container-single", threshold);
+
+// Threshold slider
+const thresholdSlider = document.getElementById("threshold");
+const thresholdValueDisplay = document.getElementById("threshold-value");
+
+thresholdSlider.addEventListener("input", function () {
+  threshold = parseFloat(this.value);
+  thresholdValueDisplay.textContent = threshold.toFixed(2);
+  createHeatmap("heatmap-container-combined", threshold);
+  createNetwork("network-container-combined", threshold);
+  createHeatmap("heatmap-container-single", threshold);
+  createNetwork("network-container-single", threshold);
+});
+
+// Re-render the single-view charts when their tab becomes active (sizes change).
+document.querySelectorAll('input[name="viz_tabs"]').forEach(tab => {
+  tab.addEventListener("change", function () {
+    const pane = this.getAttribute("data-pane");
+    if (pane === "heatmap") {
+      createHeatmap("heatmap-container-single", threshold);
+    } else if (pane === "network") {
+      createNetwork("network-container-single", threshold);
+    } else {
+      createHeatmap("heatmap-container-combined", threshold);
+      createNetwork("network-container-combined", threshold);
+    }
+  });
+});
+
+// Re-render visualizations on resize/rotate (debounced) so they stay responsive.
+let _resizeTimer;
+window.addEventListener("resize", () => {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => {
+    createHeatmap("heatmap-container-combined", threshold);
+    createNetwork("network-container-combined", threshold);
+    const active = document.querySelector('input[name="viz_tabs"]:checked');
+    const pane = active ? active.getAttribute("data-pane") : "combined";
+    if (pane === "heatmap") createHeatmap("heatmap-container-single", threshold);
+    else if (pane === "network") createNetwork("network-container-single", threshold);
+  }, 200);
+});
+
+// Create heatmap visualization
+function createHeatmap(containerId, threshold) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+
+  const filteredData = data.filter(d => d.Correlation >= threshold);
+
+  if (filteredData.length === 0) {
+    const noDataMsg = document.createElement("div");
+    noDataMsg.className = "no-data";
+    noDataMsg.textContent = "No data to display with current threshold";
+    container.appendChild(noDataMsg);
+    return;
+  }
+
+  const clusters = [...new Set(filteredData.map(d => d.Cluster))].sort();
+  const hlaTypes = [...new Set(filteredData.map(d => d.HLA))].sort();
+
+  const containerWidth = container.clientWidth || 800;
+  const maxCellSize = 40;
+  const minCellSize = 25;
+  const availableWidth = containerWidth - 150;
+  const cellSize = Math.max(minCellSize, Math.min(maxCellSize, availableWidth / hlaTypes.length));
+
+  const margin = { top: 50, right: 20, bottom: 180, left: 100 };
+  const width = cellSize * hlaTypes.length + margin.left + margin.right;
+  const height = cellSize * clusters.length + margin.top + margin.bottom;
+
+  const svgContainer = document.createElement('div');
+  svgContainer.className = 'svg-container';
+  container.appendChild(svgContainer);
+
+  const svg = d3.select(svgContainer)
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .attr("viewBox", `0 0 ${width} ${height}`)
+    .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  const x = d3.scaleBand().domain(hlaTypes).range([0, cellSize * hlaTypes.length]).padding(0.05);
+  const y = d3.scaleBand().domain(clusters).range([0, cellSize * clusters.length]).padding(0.05);
+  const colorScale = d3.scaleSequential(d3.interpolateYlGnBu).domain([0, 1]);
+
+  svg.append("g")
+    .selectAll("text")
+    .data(clusters)
+    .enter()
+    .append("text")
+    .attr("x", -10)
+    .attr("y", d => y(d) + y.bandwidth() / 2)
+    .attr("text-anchor", "end")
+    .attr("dominant-baseline", "middle")
+    .text(d => d)
+    .style("font-size", "12px")
+    .style("font-weight", "500");
+
+  const labelGroup = svg.append("g").attr("class", "axis-labels");
+  hlaTypes.forEach((d, i) => {
+    const xPos = x(d) + x.bandwidth() / 2;
+    const hlaType = d.replace("HLA_", "");
+    const isEven = i % 2 === 0;
+    labelGroup.append("text")
+      .attr("x", xPos)
+      .attr("y", isEven ? -10 : -30)
+      .attr("text-anchor", "middle")
+      .attr("dominant-baseline", "middle")
+      .text(hlaType)
+      .style("font-size", "10px")
+      .style("font-weight", "500");
+    labelGroup.append("line")
+      .attr("x1", xPos)
+      .attr("y1", isEven ? -5 : -25)
+      .attr("x2", xPos)
+      .attr("y2", -5)
+      .style("stroke", "#ddd")
+      .style("stroke-width", 0.5)
+      .style("stroke-dasharray", "2,2");
+  });
+
+  svg.selectAll("rect")
+    .data(filteredData)
+    .enter()
+    .append("rect")
+    .attr("x", d => x(d.HLA))
+    .attr("y", d => y(d.Cluster))
+    .attr("width", x.bandwidth())
+    .attr("height", y.bandwidth())
+    .style("fill", d => colorScale(d.Correlation))
+    .style("stroke", "#fff")
+    .style("stroke-width", "1px")
+    .on("mouseover", function (event, d) {
+      d3.select(this).style("stroke", "#333").style("stroke-width", "2px");
+      tooltip.transition().duration(200).style("opacity", 1);
+      tooltip.html(`
+        <strong>Cluster:</strong> ${d.Cluster}<br>
+        <strong>HLA:</strong> ${d.HLA}<br>
+        <strong>Correlation:</strong> ${d.Correlation.toFixed(2)}
+      `)
+      .style("left", (event.pageX + 10) + "px")
+      .style("top", (event.pageY - 28) + "px");
+    })
+    .on("mouseout", function () {
+      d3.select(this).style("stroke", "#fff").style("stroke-width", "1px");
+      tooltip.transition().duration(500).style("opacity", 0);
+    });
+
+  svg.selectAll("text.cell-text")
+    .data(filteredData)
+    .enter()
+    .append("text")
+    .attr("class", "cell-text")
+    .attr("x", d => x(d.HLA) + x.bandwidth() / 2)
+    .attr("y", d => y(d.Cluster) + y.bandwidth() / 2)
+    .attr("text-anchor", "middle")
+    .attr("dominant-baseline", "middle")
+    .text(d => d.Correlation.toFixed(2))
+    .style("fill", d => d.Correlation > 0.5 ? "white" : "black")
+    .style("font-size", "11px")
+    .style("font-weight", "bold");
+}
+
+// Create network visualization
+function createNetwork(containerId, threshold) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+
+  const centerBtn = document.createElement("button");
+  centerBtn.className = "center-network-btn";
+  centerBtn.textContent = "Center View";
+  centerBtn.onclick = function () { centerNetwork(containerId); };
+  container.appendChild(centerBtn);
+
+  const filteredData = data.filter(d => d.Correlation >= threshold);
+
+  if (filteredData.length === 0) {
+    const noDataMsg = document.createElement("div");
+    noDataMsg.className = "no-data";
+    noDataMsg.textContent = "No data to display with current threshold";
+    container.appendChild(noDataMsg);
+    return;
+  }
+
+  const clusters = [...new Set(filteredData.map(d => d.Cluster))];
+  const hlaTypes = [...new Set(filteredData.map(d => d.HLA))];
+
+  const nodes = [
+    ...clusters.map(c => ({ id: c, group: "cluster" })),
+    ...hlaTypes.map(h => ({ id: h, group: "hla" }))
+  ];
+
+  const links = filteredData.map(d => ({
+    source: d.Cluster,
+    target: d.HLA,
+    value: d.Correlation
+  }));
+
+  const width = container.clientWidth || 800;
+  const height = container.clientHeight || 420;
+
+  const svg = d3.select(container)
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+  const zoom = d3.zoom()
+    .scaleExtent([0.5, 5])
+    .on("zoom", (event) => { g.attr("transform", event.transform); });
+
+  svg.call(zoom);
+
+  const g = svg.append("g");
+
+  const simulation = d3.forceSimulation(nodes)
+    .force("link", d3.forceLink(links).id(d => d.id).distance(d => 100 - d.value * 40))
+    .force("charge", d3.forceManyBody().strength(-100))
+    .force("center", d3.forceCenter(width / 2, height / 2))
+    .force("collision", d3.forceCollide().radius(d => d.group === "cluster" ? 25 : 10))
+    .force("x", d3.forceX(width / 2).strength(0.05))
+    .force("y", d3.forceY(height / 2).strength(0.05));
+
+  simulations[containerId] = simulation;
+
+  const link = g.append("g")
+    .selectAll("line")
+    .data(links)
+    .enter()
+    .append("line")
+    .attr("stroke-width", d => Math.max(1, d.value * 3))
+    .attr("stroke", d => clusterColors[d.source.id] || "#999")
+    .attr("opacity", 0.6);
+
+  const node = g.append("g")
+    .selectAll("circle")
+    .data(nodes)
+    .enter()
+    .append("circle")
+    .attr("r", d => d.group === "cluster" ? 15 : 6)
+    .attr("fill", d => d.group === "cluster" ? (clusterColors[d.id] || "#999") : "#ccc")
+    .attr("stroke", "#fff")
+    .attr("stroke-width", 1.5)
+    .on("mouseover", function (event, d) {
+      d3.select(this).attr("stroke", "#333").attr("stroke-width", 2);
+      tooltip.transition().duration(200).style("opacity", 1);
+      if (d.group === "cluster") {
+        const clusterData = filteredData.filter(item => item.Cluster === d.id);
+        const avgCorrelation = clusterData.reduce((sum, item) => sum + item.Correlation, 0) / clusterData.length;
+        tooltip.html(`
+          <strong>${d.id}</strong><br>
+          Average Correlation: ${avgCorrelation.toFixed(3)}<br>
+          HLA Connections: ${clusterData.length}
+        `);
+      } else {
+        const connections = filteredData.filter(item => item.HLA === d.id)
+          .sort((a, b) => b.Correlation - a.Correlation);
+        let html = `<strong>${d.id}</strong><br><table style="border-collapse: collapse;">
+          <tr><th style="padding: 3px; text-align: left;">Cluster</th>
+          <th style="padding: 3px; text-align: right;">Correlation</th></tr>`;
+        connections.forEach(conn => {
+          html += `<tr>
+            <td style="padding: 3px;">${conn.Cluster}</td>
+            <td style="padding: 3px; text-align: right;">${conn.Correlation.toFixed(2)}</td>
+          </tr>`;
+        });
+        html += `</table>`;
+        tooltip.html(html);
+      }
+      tooltip.style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 28) + "px");
+      if (d.group === "cluster") {
+        link.attr("opacity", l => l.source.id === d.id ? 1 : 0.1)
+          .attr("stroke-width", l => l.source.id === d.id ? Math.max(2, l.value * 4) : 1);
+      } else {
+        link.attr("opacity", l => l.target.id === d.id ? 1 : 0.1)
+          .attr("stroke-width", l => l.target.id === d.id ? Math.max(2, l.value * 4) : 1);
+      }
+    })
+    .on("mouseout", function () {
+      d3.select(this).attr("stroke", "#fff").attr("stroke-width", 1.5);
+      tooltip.transition().duration(500).style("opacity", 0);
+      link.attr("opacity", 0.6).attr("stroke-width", d => Math.max(1, d.value * 3));
+    })
+    .call(d3.drag()
+      .on("start", dragstarted)
+      .on("drag", dragged)
+      .on("end", dragended)
+    );
+
+  g.append("g")
+    .selectAll("text")
+    .data(nodes.filter(d => d.group === "cluster"))
+    .enter()
+    .append("text")
+    .attr("text-anchor", "middle")
+    .attr("dominant-baseline", "middle")
+    .text(d => d.id)
+    .style("font-size", "12px")
+    .style("fill", "white")
+    .style("pointer-events", "none");
+
+  g.append("g")
+    .selectAll("text.hla-label")
+    .data(nodes.filter(d => {
+      if (d.group !== "hla") return false;
+      const maxCorr = Math.max(...filteredData
+        .filter(item => item.HLA === d.id)
+        .map(item => item.Correlation));
+      return maxCorr > 0.7;
+    }))
+    .enter()
+    .append("text")
+    .attr("class", "hla-label")
+    .attr("dx", 8)
+    .attr("dy", 3)
+    .text(d => d.id.replace("HLA_", ""))
+    .style("font-size", "8px")
+    .style("fill", "#333")
+    .style("pointer-events", "none");
+
+  simulation.on("tick", () => {
+    nodes.forEach(d => {
+      const padding = d.group === "cluster" ? 20 : 10;
+      d.x = Math.max(padding, Math.min(width - padding, d.x));
+      d.y = Math.max(padding, Math.min(height - padding, d.y));
+    });
+
+    link
+      .attr("x1", d => d.source.x)
+      .attr("y1", d => d.source.y)
+      .attr("x2", d => d.target.x)
+      .attr("y2", d => d.target.y);
+
+    node
+      .attr("cx", d => d.x)
+      .attr("cy", d => d.y);
+
+    g.selectAll("text")
+      .filter(function () { return !this.classList.contains("hla-label"); })
+      .data(nodes.filter(d => d.group === "cluster"))
+      .attr("x", d => d.x)
+      .attr("y", d => d.y);
+
+    g.selectAll("text.hla-label")
+      .data(nodes.filter(d => d.group === "hla" && filteredData
+        .filter(item => item.HLA === d.id)
+        .some(item => item.Correlation > 0.7)))
+      .attr("x", d => d.x)
+      .attr("y", d => d.y);
+  });
+
+  setTimeout(() => {
+    const clusterNodes = nodes.filter(d => d.group === "cluster");
+    const radius = Math.min(width, height) / 3;
+    const angleStep = (2 * Math.PI) / clusterNodes.length;
+    clusterNodes.forEach((d, i) => {
+      const angle = i * angleStep;
+      d.x = width / 2 + radius * Math.cos(angle);
+      d.y = height / 2 + radius * Math.sin(angle);
+      d.fx = d.x;
+      d.fy = d.y;
+    });
+    simulation.alpha(1).restart();
+    setTimeout(() => {
+      clusterNodes.forEach(d => { d.fx = null; d.fy = null; });
+      simulation.alpha(0.3).restart();
+    }, 1000);
+  }, 100);
+
+  function dragstarted(event, d) {
+    if (!event.active) simulation.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+  }
+  function dragged(event, d) {
+    d.fx = event.x;
+    d.fy = event.y;
+  }
+  function dragended(event, d) {
+    if (!event.active) simulation.alphaTarget(0);
+    d.fx = null;
+    d.fy = null;
+  }
+}
+
+// Center network view
+function centerNetwork(containerId) {
+  const container = document.getElementById(containerId);
+  const svg = d3.select(container).select("svg");
+  const simulation = simulations[containerId];
+  if (svg.empty() || !simulation) return;
+  svg.transition().duration(750).call(
+    d3.zoom().transform,
+    d3.zoomIdentity.translate(0, 0).scale(1)
+  );
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+  simulation.force("center", d3.forceCenter(width / 2, height / 2))
+    .alpha(1)
+    .restart();
+}
+</script>
+</body>
+</html>
