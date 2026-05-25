@@ -46,3 +46,11 @@ uMAP.py
 .pixi/
 # reference parquets are fetched from the release, not committed (large)
 data/ref_data/*.parquet
+
+# local GibbsCluster sample inputs (test data, not shipped)
+data/9mersonly/
+data/P4724/
+data/P6215/
+
+# SLURM job logs
+slurm-*.out
