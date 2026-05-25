@@ -5,5 +5,5 @@
 # release tag in the url. (sha256 below is for the current matrices-only build;
 # rebuilding with --with-logos changes it.)
 species	filename	sha256	url
-human	human.parquet	000920fc88ed57e13ab4ec3bc1a0ff1808e63732e323db35a3eb7c3b0765f056	https://github.com/PurcellLab/MHC-TP/releases/download/refdata-2025/human.parquet
-mouse	mouse.parquet	8fd84500bf62eece27f48b887a08d4d35181038bd12ac90b4a058fe66ac77912	https://github.com/PurcellLab/MHC-TP/releases/download/refdata-2025/mouse.parquet
+human	human.parquet	e26a3bdad2e6e8bb93979b3cc2ccd01585f04393315752b58090d8cf537c4f36	https://github.com/PurcellLab/MHC-TP/releases/download/refdata-2025/human.parquet
+mouse	mouse.parquet	870657628defb9e0660b7e5915131118558a03fc6f56d5d9ced3b052f1e3f2dc	https://github.com/PurcellLab/MHC-TP/releases/download/refdata-2025/mouse.parquet
