@@ -56,9 +56,12 @@ def build_species_parquet(
         }
         if with_logos:
             from hla_pepclust.db.logos import reference_logo_bytes
+
             row["logo"] = reference_logo_bytes(
-                matrix_file, seq2logo_path=seq2logo_path,
-                python_exe=seq2logo_python, title=info.raw,
+                matrix_file,
+                seq2logo_path=seq2logo_path,
+                python_exe=seq2logo_python,
+                title=info.raw,
             )
         rows.append(row)
     write_reference(pd.DataFrame(rows), out_parquet)

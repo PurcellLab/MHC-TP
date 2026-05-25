@@ -27,7 +27,7 @@ _KL_PARAMS = {
     "-l": "1",
     "-S": "1",
     "-i": "1",
-    "-p": "1600x1200",   # display-sized; keeps the file small without visible loss
+    "-p": "1600x1200",  # display-sized; keeps the file small without visible loss
     "-s": "40",
     "--format": "PNG",
 }
@@ -58,11 +58,17 @@ class Seq2LogoRenderer:
         self.seq2logo_path = Path(path)
         self.script = self.seq2logo_path / "Seq2Logo.py"
         if not self.script.exists():
-            raise Seq2LogoNotConfigured(f"Seq2Logo.py not found under {self.seq2logo_path}")
+            raise Seq2LogoNotConfigured(
+                f"Seq2Logo.py not found under {self.seq2logo_path}"
+            )
         self.python_exe = python_exe or os.environ.get("SEQ2LOGO_PYTHON") or "python"
 
-    def build_command(self, matrix_file: str | os.PathLike, output_path: str | os.PathLike,
-                      title: str = "") -> list[str]:
+    def build_command(
+        self,
+        matrix_file: str | os.PathLike,
+        output_path: str | os.PathLike,
+        title: str = "",
+    ) -> list[str]:
         """Construct the Seq2Logo command (KL logo, PNG). Pure — no side effects."""
         params = dict(_KL_PARAMS)
         params["-f"] = str(matrix_file)
@@ -74,8 +80,14 @@ class Seq2LogoRenderer:
             cmd.extend([key, str(value)])
         return cmd
 
-    def render(self, matrix_file: str | os.PathLike, out_dir: str | os.PathLike,
-               name: str | None = None, title: str = "", timeout: int = 90) -> Path | None:
+    def render(
+        self,
+        matrix_file: str | os.PathLike,
+        out_dir: str | os.PathLike,
+        name: str | None = None,
+        title: str = "",
+        timeout: int = 90,
+    ) -> Path | None:
         """Render a logo PNG; return its path (Seq2Logo appends ``-001``) or None."""
         matrix_file = Path(matrix_file)
         if not matrix_file.exists():
@@ -92,8 +104,11 @@ class Seq2LogoRenderer:
 
         # Seq2Logo imports Seq2Logo_module relative to its own directory.
         result = subprocess.run(
-            cmd, cwd=str(self.seq2logo_path),
-            capture_output=True, text=True, timeout=timeout,
+            cmd,
+            cwd=str(self.seq2logo_path),
+            capture_output=True,
+            text=True,
+            timeout=timeout,
         )
         if result.returncode != 0:
             return None
@@ -102,7 +117,9 @@ class Seq2LogoRenderer:
                 return cand
         return None
 
-    def render_png_bytes(self, matrix_file: str | os.PathLike, title: str = "") -> bytes | None:
+    def render_png_bytes(
+        self, matrix_file: str | os.PathLike, title: str = ""
+    ) -> bytes | None:
         """Render and return the PNG bytes (for embedding), or None on failure."""
         with tempfile.TemporaryDirectory() as tmp:
             png = self.render(matrix_file, tmp, name="logo", title=title)

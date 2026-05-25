@@ -33,8 +33,14 @@ def datatable_rows(correlation_dict, kld_df: pd.DataFrame | None) -> list[dict]:
     for (gibbs_name, hla), corr in correlation_dict.items():
         cid, group, nclust = parse_cluster_id(gibbs_name)
         kld = _lookup_kld(kld_df, group, nclust)
-        rows.append({"cluster": cid, "hla": hla,
-                     "correlation": round(float(corr), 4), "kld": kld})
+        rows.append(
+            {
+                "cluster": cid,
+                "hla": hla,
+                "correlation": round(float(corr), 4),
+                "kld": kld,
+            }
+        )
     rows.sort(key=lambda r: r["correlation"], reverse=True)
     return rows
 

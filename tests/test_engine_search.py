@@ -4,17 +4,19 @@ from hla_pepclust.engine.search import search
 
 
 def _ref_df():
-    ramp = np.arange(20, dtype=np.float32)   # one position, 20 AA values
+    ramp = np.arange(20, dtype=np.float32)  # one position, 20 AA values
     inv = ramp[::-1].copy()
-    return pd.DataFrame({
-        "allotype": ["A*02:01", "A*01:01"],
-        "formatted": ["A0201", "A0101"],
-        "mhc_class": ["I", "I"],
-        "locus": ["A", "A"],
-        "n_positions": [1, 1],
-        "matrix": [ramp.tolist(), inv.tolist()],
-        "source": ["test", "test"],
-    })
+    return pd.DataFrame(
+        {
+            "allotype": ["A*02:01", "A*01:01"],
+            "formatted": ["A0201", "A0101"],
+            "mhc_class": ["I", "I"],
+            "locus": ["A", "A"],
+            "n_positions": [1, 1],
+            "matrix": [ramp.tolist(), inv.tolist()],
+            "source": ["test", "test"],
+        }
+    )
 
 
 def test_search_finds_best():

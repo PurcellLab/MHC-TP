@@ -26,9 +26,16 @@ def _eps_to_png_bytes(eps_path: Path) -> bytes | None:
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp) / "logo.png"
         cmd = [
-            "gs", "-q", "-dSAFER", "-dBATCH", "-dNOPAUSE",
-            "-sDEVICE=pngalpha", "-r150", "-dEPSCrop",
-            f"-sOutputFile={out}", str(eps_path),
+            "gs",
+            "-q",
+            "-dSAFER",
+            "-dBATCH",
+            "-dNOPAUSE",
+            "-sDEVICE=pngalpha",
+            "-r150",
+            "-dEPSCrop",
+            f"-sOutputFile={out}",
+            str(eps_path),
         ]
         try:
             r = subprocess.run(cmd, capture_output=True, timeout=60)

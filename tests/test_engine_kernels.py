@@ -6,10 +6,14 @@ def test_correlation_identical_and_inverted():
     # one gibbs matrix shape (1, 1, 20): a ramp 0..19 (index 0 == 0.0 is excluded
     # by the non-zero mask, leaving 19 valid cells >= 10).
     g = np.arange(20, dtype=np.float32).reshape(1, 1, 20)
-    refs = np.stack([
-        np.arange(20, dtype=np.float32).reshape(1, 20),         # identical -> corr ~1
-        np.arange(20, dtype=np.float32)[::-1].reshape(1, 20),   # inverted  -> corr ~-1 (below thr)
-    ]).astype(np.float32)
+    refs = np.stack(
+        [
+            np.arange(20, dtype=np.float32).reshape(1, 20),  # identical -> corr ~1
+            np.arange(20, dtype=np.float32)[::-1].reshape(
+                1, 20
+            ),  # inverted  -> corr ~-1 (below thr)
+        ]
+    ).astype(np.float32)
     mask = np.ones(2, dtype=np.bool_)
     corr, invalid = compute_all_correlations(g, refs, mask, 0.5)
     assert invalid[0] == 0

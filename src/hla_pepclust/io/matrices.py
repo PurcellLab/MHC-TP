@@ -32,7 +32,9 @@ def parse_matrix(file_path: str | os.PathLike) -> Optional[np.ndarray]:
         if len(parts) < N_AMINO_ACIDS:
             continue
         try:
-            rows.append([float(parts[-(N_AMINO_ACIDS - i)]) for i in range(N_AMINO_ACIDS)])
+            rows.append(
+                [float(parts[-(N_AMINO_ACIDS - i)]) for i in range(N_AMINO_ACIDS)]
+            )
         except (ValueError, IndexError):
             continue
 

@@ -11,7 +11,10 @@ def _sample_df():
             "mhc_class": ["I", "I"],
             "locus": ["A", "A"],
             "n_positions": [2, 2],
-            "matrix": [np.zeros(40, np.float32).tolist(), np.ones(40, np.float32).tolist()],
+            "matrix": [
+                np.zeros(40, np.float32).tolist(),
+                np.ones(40, np.float32).tolist(),
+            ],
             "source": ["NetMHCpan-4.2", "NetMHCpan-4.2"],
         }
     )
@@ -29,6 +32,7 @@ def test_roundtrip(tmp_path):
 
 def test_write_rejects_missing_columns(tmp_path):
     import pytest
+
     bad = pd.DataFrame({"allotype": ["X"]})
     with pytest.raises(ValueError):
         write_reference(bad, tmp_path / "bad.parquet")

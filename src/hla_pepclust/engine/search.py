@@ -30,7 +30,9 @@ def search(
     if hla_filter:
         mask = reference["formatted"].isin(hla_filter).to_numpy()
 
-    corr, _invalid = compute_all_correlations(padded, ref_arr.astype(np.float32), mask, threshold)
+    corr, _invalid = compute_all_correlations(
+        padded, ref_arr.astype(np.float32), mask, threshold
+    )
 
     formatted = reference["formatted"].to_numpy()
     out: dict[tuple[str, str], float] = {}

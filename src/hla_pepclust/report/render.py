@@ -17,9 +17,15 @@ from hla_pepclust.report.logos import render_logo
 _TEMPLATES = Path(__file__).parent / "templates"
 
 
-def render_report(correlation_dict, reference_df, gibbs_matrices, output_dir,
-                  kld_df: pd.DataFrame | None = None, version: str = "",
-                  gibbs_dir: str | None = None) -> str:
+def render_report(
+    correlation_dict,
+    reference_df,
+    gibbs_matrices,
+    output_dir,
+    kld_df: pd.DataFrame | None = None,
+    version: str = "",
+    gibbs_dir: str | None = None,
+) -> str:
     """Write <output_dir>/clust_result/clust-search-result.html and return its path."""
     ref_by_fmt = {r.formatted: r for r in reference_df.itertuples()}
 
@@ -29,7 +35,9 @@ def render_report(correlation_dict, reference_df, gibbs_matrices, output_dir,
     # Best HLA per (cluster, class), with both logos rendered from the matrices.
     groups: dict[str, list] = {}
     seen: set[tuple[str, str]] = set()
-    for (gibbs_name, hla), corr in sorted(correlation_dict.items(), key=lambda kv: -kv[1]):
+    for (gibbs_name, hla), corr in sorted(
+        correlation_dict.items(), key=lambda kv: -kv[1]
+    ):
         cid, group, nclust = parse_cluster_id(gibbs_name)
         ref = ref_by_fmt.get(hla)
         if ref is None:
@@ -53,16 +61,20 @@ def render_report(correlation_dict, reference_df, gibbs_matrices, output_dir,
         cluster_logo = find_cluster_logo(gibbs_dir, cid) if gibbs_dir else None
         if not cluster_logo:
             gibbs_mat = gibbs_matrices.get(gibbs_name)
-            cluster_logo = render_logo(gibbs_mat, title=cid) if gibbs_mat is not None else ""
+            cluster_logo = (
+                render_logo(gibbs_mat, title=cid) if gibbs_mat is not None else ""
+            )
 
-        groups.setdefault(ref.mhc_class, []).append({
-            "cluster_id": cid,
-            "hla": hla,
-            "correlation": round(float(corr), 3),
-            "kld": _kld(kld_df, group, nclust),
-            "ref_logo": ref_logo,
-            "cluster_logo": cluster_logo,
-        })
+        groups.setdefault(ref.mhc_class, []).append(
+            {
+                "cluster_id": cid,
+                "hla": hla,
+                "correlation": round(float(corr), 3),
+                "kld": _kld(kld_df, group, nclust),
+                "ref_logo": ref_logo,
+                "cluster_logo": cluster_logo,
+            }
+        )
 
     class_groups = [{"mhc_class": c, "clusters": groups[c]} for c in sorted(groups)]
 
@@ -72,8 +84,10 @@ def render_report(correlation_dict, reference_df, gibbs_matrices, output_dir,
     )
     template = env.get_template("report.html.j2")
     html = template.render(
-        version=version, pcc_json=pcc_json,
-        table_rows=table_rows, class_groups=class_groups,
+        version=version,
+        pcc_json=pcc_json,
+        table_rows=table_rows,
+        class_groups=class_groups,
     )
 
     out_dir = Path(output_dir) / "clust_result"

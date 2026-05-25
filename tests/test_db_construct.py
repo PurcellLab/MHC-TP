@@ -6,12 +6,10 @@ from hla_pepclust.refdata.parquet_io import read_reference
 
 def test_build_species_parquet(tmp_path):
     mat = tmp_path / "A_02_01.txt"
-    mat.write_text(textwrap.dedent(
-        """\
+    mat.write_text(textwrap.dedent("""\
         Pos A R N D C Q E G H I L K M F P S T W Y V
         1 P 0.1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.9
-        """
-    ))
+        """))
     db = pd.DataFrame({"allotypes": ["HLA-A*02:01"], "matrices_path": ["A_02_01.txt"]})
     db_csv = tmp_path / "human.db"
     db.to_csv(db_csv, index=False)
