@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from hla_pepclust.report.render import render_report
+from mhc_tp.report.render import render_report
 
 
 def _ref_df():
@@ -34,4 +34,4 @@ def test_render_report_writes_standalone_html(tmp_path):
     assert "H2Kb" in html
     assert "const PCC =" in html  # pcc data inlined
     assert "clusters" in html  # per-cluster-count section heading
-    assert path.endswith("clust-search-result.html")
+    assert path.endswith("mhc-tp-result.html")

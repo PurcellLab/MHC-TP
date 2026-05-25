@@ -1,6 +1,6 @@
 import pytest
 
-from hla_pepclust.report.seq2logo import Seq2LogoNotConfigured, Seq2LogoRenderer
+from mhc_tp.report.seq2logo import Seq2LogoNotConfigured, Seq2LogoRenderer
 
 
 def test_not_configured(monkeypatch):

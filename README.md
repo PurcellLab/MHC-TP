@@ -1,9 +1,9 @@
-# HLA-PepClust
+# MHC-TP
 
 Cluster immunopeptidomics peptides by their HLA/MHC binding motif and get a
 ranked table plus a standalone interactive HTML report.
 
-`clust-search` takes a **GibbsCluster** output folder, correlates each cluster's
+`mhc-tp` takes a **GibbsCluster** output folder, correlates each cluster's
 position-specific scoring matrix against a reference of HLA/MHC **class I + II**
 binding motifs (human & mouse), and writes the best allele match per cluster.
 
@@ -31,13 +31,13 @@ pip install -e .
 The reference motifs are fetched from the GitHub release, not bundled:
 
 ```bash
-clust-search fetch -s human     # or:  mouse  |  all
+mhc-tp fetch -s human     # or:  mouse  |  all
 ```
 
 ### 3. Run a search
 
 ```bash
-clust-search search <gibbscluster_output_dir> -s human -o results/
+mhc-tp search <gibbscluster_output_dir> -s human -o results/
 ```
 
 `<gibbscluster_output_dir>` is a GibbsCluster run folder (it must contain a
@@ -48,7 +48,7 @@ clust-search search <gibbscluster_output_dir> -s human -o results/
 | file | what it is |
 |------|------------|
 | `correlations.csv` | every cluster→allele match above the threshold (`hla` = display name, `formatted` = raw key, `correlation` = PCC) |
-| `clust-search-result.html` | standalone report — open it in any browser |
+| `mhc-tp-result.html` | standalone report — open it in any browser |
 
 ### Common options
 
@@ -58,11 +58,11 @@ clust-search search <gibbscluster_output_dir> -s human -o results/
 | `-r, --reference` | path to a `<species>.parquet` (otherwise the fetched one is used) | auto |
 | `-t, --threshold` | minimum Pearson correlation to report | `0.70` |
 | `-o, --output` | output directory | `output` |
-| `--threads` | max CPU threads (also `$HLA_PEPCLUST_THREADS`) | `4` |
+| `--threads` | max CPU threads (also `$MHC_TP_THREADS`) | `4` |
 | `--no-html` | write only the CSV | off |
 | `-l, --log` | also save the coloured session log | off |
 
-Run `clust-search search --help` for the full list.
+Run `mhc-tp search --help` for the full list.
 
 ---
 
@@ -93,7 +93,7 @@ Seq2Logo reference logos (`--with-logos`) needs a separate Python 2.7 env and
 is slow — run it on a cluster:
 
 ```bash
-clust-search build-ref <species> <classI_pack> <classII_pack> <out.parquet> \
+mhc-tp build-ref <species> <classI_pack> <classII_pack> <out.parquet> \
     --with-logos --workers 16
 # Seq2Logo itself runs in its own env:  pixi run -e seq2logo ...
 ```
@@ -101,8 +101,8 @@ clust-search build-ref <species> <classI_pack> <classII_pack> <out.parquet> \
 ### Layout
 
 ```
-src/hla_pepclust/
-  cli.py            entry point (clust-search)
+src/mhc_tp/
+  cli.py            entry point (mhc-tp)
   engine/           numba correlation search
   refdata/          reference parquet read/write, fetch, schema
   report/           HTML report rendering (data, logos, templates)

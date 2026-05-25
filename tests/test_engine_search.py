@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from hla_pepclust.engine.search import search
+from mhc_tp.engine.search import search
 
 
 def _ref_df():

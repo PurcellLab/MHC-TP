@@ -1,6 +1,6 @@
 import pytest
 
-from hla_pepclust.refdata.fetch import (
+from mhc_tp.refdata.fetch import (
     data_dir,
     load_manifest,
     reference_path,
@@ -9,7 +9,7 @@ from hla_pepclust.refdata.fetch import (
 
 
 def test_data_dir_env_override(tmp_path, monkeypatch):
-    monkeypatch.setenv("HLA_PEPCLUST_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("MHC_TP_DATA_DIR", str(tmp_path))
     assert data_dir() == tmp_path
     assert reference_path("Human") == tmp_path / "human.parquet"
 
@@ -21,8 +21,8 @@ def test_resolve_override(tmp_path):
 
 
 def test_resolve_missing_raises_with_guidance(tmp_path, monkeypatch):
-    monkeypatch.setenv("HLA_PEPCLUST_DATA_DIR", str(tmp_path))
-    with pytest.raises(FileNotFoundError, match="clust-search fetch"):
+    monkeypatch.setenv("MHC_TP_DATA_DIR", str(tmp_path))
+    with pytest.raises(FileNotFoundError, match="mhc-tp fetch"):
         resolve_reference("human")
 
 

@@ -20,7 +20,6 @@ poetry.lock
 *notes
 .pytest_cachedata.zip
 data.zip
-HLA_PEPCLUST.egg-info
 __pycache__
 **env
 test_results

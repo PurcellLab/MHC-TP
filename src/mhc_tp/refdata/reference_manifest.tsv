@@ -1,5 +1,5 @@
-# Prebuilt reference parquets — downloaded by `clust-search fetch`.
-# Built with `clust-search build-ref <species> <classI_pack> <classII_pack> <out>`
+# Prebuilt reference parquets — downloaded by `mhc-tp fetch`.
+# Built with `mhc-tp build-ref <species> <classI_pack> <classII_pack> <out>`
 # (add --with-logos to embed Seq2Logo reference logos), then uploaded as a
 # GitHub release asset. On each release: rebuild, recompute sha256, bump the
 # release tag in the url. (sha256 below is for the current matrices-only build;

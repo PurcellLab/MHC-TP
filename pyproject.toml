@@ -3,7 +3,7 @@ requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
-name = "hla-pepclust"
+name = "mhc-tp"
 dynamic = ["version"]
 description = "Cluster immunopeptidomics peptides by HLA/MHC binding motif, with an interactive HTML report"
 readme = "README.md"
@@ -30,13 +30,13 @@ dependencies = [
 dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.10"]
 
 [project.scripts]
-clust-search = "hla_pepclust.cli:main"
+mhc-tp = "mhc_tp.cli:main"
 
 [tool.hatch.version]
 source = "vcs"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/hla_pepclust"]
+packages = ["src/mhc_tp"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,6 +1,6 @@
 import textwrap
 import pytest
-from hla_pepclust.io.kld import read_kld
+from mhc_tp.io.kld import read_kld
 
 
 def test_read_kld(tmp_path):

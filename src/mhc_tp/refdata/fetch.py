@@ -1,6 +1,6 @@
 """Resolve and fetch prebuilt reference parquets to a per-user data dir.
 
-End users run ``clust-search fetch`` to download the prebuilt class I+II
+End users run ``mhc-tp fetch`` to download the prebuilt class I+II
 reference parquets (with embedded Seq2Logo reference logos) instead of building
 them. The download source + checksums live in the packaged
 ``reference_manifest.tsv``; the maintainer fills them in on each release.
@@ -16,12 +16,12 @@ from pathlib import Path
 
 import platformdirs
 
-_APP = "hla_pepclust"
+_APP = "mhc_tp"
 
 
 def data_dir() -> Path:
-    """User data dir for reference files. Overridable via ``HLA_PEPCLUST_DATA_DIR``."""
-    override = os.environ.get("HLA_PEPCLUST_DATA_DIR")
+    """User data dir for reference files. Overridable via ``MHC_TP_DATA_DIR``."""
+    override = os.environ.get("MHC_TP_DATA_DIR")
     return Path(override) if override else Path(platformdirs.user_data_dir(_APP))
 
 
@@ -40,7 +40,7 @@ def resolve_reference(species: str, override: str | None = None) -> Path:
     p = reference_path(species)
     if not p.exists():
         raise FileNotFoundError(
-            f"No {species} reference at {p}. Run: clust-search fetch --species {species} "
+            f"No {species} reference at {p}. Run: mhc-tp fetch --species {species} "
             f"(or pass --reference <path>)."
         )
     return p
@@ -48,7 +48,7 @@ def resolve_reference(species: str, override: str | None = None) -> Path:
 
 def load_manifest() -> list[dict]:
     """Parse the packaged reference manifest (species/filename/sha256/url)."""
-    text = files("hla_pepclust.refdata").joinpath("reference_manifest.tsv").read_text()
+    text = files("mhc_tp.refdata").joinpath("reference_manifest.tsv").read_text()
     rows = []
     for line in text.splitlines():
         line = line.strip()
@@ -72,7 +72,7 @@ def fetch(species: str = "all", dest: str | None = None) -> list[Path]:
         if not row["url"] or row["url"] == "-":
             raise RuntimeError(
                 f"No download URL configured for the {row['species']} reference yet. "
-                f"Build it locally with `clust-search build-ref`, or point --reference "
+                f"Build it locally with `mhc-tp build-ref`, or point --reference "
                 f"at a parquet."
             )
         target = out_dir / row["filename"]

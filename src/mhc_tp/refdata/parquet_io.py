@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from hla_pepclust.refdata.schema import COLUMNS
+from mhc_tp.refdata.schema import COLUMNS
 
 
 def write_reference(df: pd.DataFrame, path: str | os.PathLike) -> None:

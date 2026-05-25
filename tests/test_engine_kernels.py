@@ -1,5 +1,5 @@
 import numpy as np
-from hla_pepclust.engine.kernels import compute_all_correlations
+from mhc_tp.engine.kernels import compute_all_correlations
 
 
 def test_correlation_identical_and_inverted():

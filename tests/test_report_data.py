@@ -1,4 +1,4 @@
-from hla_pepclust.report.data import parse_cluster_id, pcc_records, datatable_rows
+from mhc_tp.report.data import parse_cluster_id, pcc_records, datatable_rows
 
 
 def test_parse_cluster_id():

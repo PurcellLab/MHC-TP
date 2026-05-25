@@ -9,9 +9,9 @@ import numpy as np
 import pandas as pd
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from hla_pepclust.constants import N_AMINO_ACIDS
-from hla_pepclust.report.assets import find_cluster_logo, png_bytes_to_data_uri
-from hla_pepclust.report.data import datatable_rows, parse_cluster_id, pcc_records
+from mhc_tp.constants import N_AMINO_ACIDS
+from mhc_tp.report.assets import find_cluster_logo, png_bytes_to_data_uri
+from mhc_tp.report.data import datatable_rows, parse_cluster_id, pcc_records
 
 _TEMPLATES = Path(__file__).parent / "templates"
 
@@ -19,7 +19,7 @@ _TEMPLATES = Path(__file__).parent / "templates"
 def _render_logo(*args, **kwargs):
     """Lazy logomaker fallback: import matplotlib/logomaker (~1.6s) only when a
     logo actually has to be drawn (i.e. no embedded Seq2Logo / gibbs logo)."""
-    from hla_pepclust.report.logos import render_logo
+    from mhc_tp.report.logos import render_logo
 
     return render_logo(*args, **kwargs)
 
@@ -35,7 +35,7 @@ def render_report(
     logo_map: dict | None = None,
     name_map: dict | None = None,
 ) -> str:
-    """Write <output_dir>/clust_result/clust-search-result.html and return its path.
+    """Write <output_dir>/clust_result/mhc-tp-result.html and return its path.
 
     ``logo_map`` ({formatted: png_bytes}) supplies reference logos when the
     reference DataFrame was loaded without the heavy ``logo`` column.
@@ -116,7 +116,7 @@ def render_report(
 
     out_dir = Path(output_dir) / "clust_result"
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / "clust-search-result.html"
+    out_path = out_dir / "mhc-tp-result.html"
     out_path.write_text(html)
     return str(out_path)
 

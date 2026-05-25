@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
-from hla_pepclust.cli import run_search
-from hla_pepclust.refdata.parquet_io import write_reference
+from mhc_tp.cli import run_search
+from mhc_tp.refdata.parquet_io import write_reference
 
 
 def test_run_search_writes_csv(tmp_path):
@@ -72,4 +72,4 @@ def test_run_search_writes_html(tmp_path):
         threshold=0.5,
         top_n=3,
     )
-    assert (out / "clust_result" / "clust-search-result.html").exists()
+    assert (out / "clust_result" / "mhc-tp-result.html").exists()

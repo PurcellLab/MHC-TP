@@ -5,9 +5,9 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from hla_pepclust.constants import N_AMINO_ACIDS
-from hla_pepclust.engine.cache import build_reference_array
-from hla_pepclust.engine.kernels import compute_all_correlations
+from mhc_tp.constants import N_AMINO_ACIDS
+from mhc_tp.engine.cache import build_reference_array
+from mhc_tp.engine.kernels import compute_all_correlations
 
 
 def search(

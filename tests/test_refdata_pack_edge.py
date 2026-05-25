@@ -16,25 +16,25 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from hla_pepclust.constants import N_AMINO_ACIDS
-from hla_pepclust.db.pack import (
+from mhc_tp.constants import N_AMINO_ACIDS
+from mhc_tp.db.pack import (
     build_pack_parquet,
     build_species_reference,
     classify_allele,
 )
-from hla_pepclust.refdata.export import export_logos
-from hla_pepclust.refdata.fetch import (
+from mhc_tp.refdata.export import export_logos
+from mhc_tp.refdata.fetch import (
     data_dir,
     load_manifest,
     reference_path,
     resolve_reference,
 )
-from hla_pepclust.refdata.parquet_io import (
+from mhc_tp.refdata.parquet_io import (
     load_logos,
     read_reference,
     write_reference,
 )
-from hla_pepclust.refdata.schema import COLUMNS
+from mhc_tp.refdata.schema import COLUMNS
 
 # --------------------------------------------------------------------------- #
 # Helpers
@@ -220,18 +220,18 @@ def test_load_logos_skips_empty_blobs(tmp_path):
 
 
 def test_data_dir_honours_env_override(tmp_path, monkeypatch):
-    monkeypatch.setenv("HLA_PEPCLUST_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("MHC_TP_DATA_DIR", str(tmp_path))
     assert data_dir() == tmp_path
 
 
 def test_data_dir_default_without_env(monkeypatch):
-    monkeypatch.delenv("HLA_PEPCLUST_DATA_DIR", raising=False)
+    monkeypatch.delenv("MHC_TP_DATA_DIR", raising=False)
     d = data_dir()
-    assert "hla_pepclust" in str(d)
+    assert "mhc_tp" in str(d)
 
 
 def test_reference_path_lowercases_species(tmp_path, monkeypatch):
-    monkeypatch.setenv("HLA_PEPCLUST_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("MHC_TP_DATA_DIR", str(tmp_path))
     assert reference_path("HUMAN") == tmp_path / "human.parquet"
     assert reference_path("Mouse") == tmp_path / "mouse.parquet"
 
@@ -249,13 +249,13 @@ def test_resolve_reference_override_missing_raises(tmp_path):
 
 
 def test_resolve_reference_present_in_data_dir(tmp_path, monkeypatch):
-    monkeypatch.setenv("HLA_PEPCLUST_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("MHC_TP_DATA_DIR", str(tmp_path))
     (tmp_path / "human.parquet").write_bytes(b"x")
     assert resolve_reference("human") == tmp_path / "human.parquet"
 
 
 def test_resolve_reference_missing_mentions_fetch(tmp_path, monkeypatch):
-    monkeypatch.setenv("HLA_PEPCLUST_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("MHC_TP_DATA_DIR", str(tmp_path))
     with pytest.raises(FileNotFoundError, match="fetch"):
         resolve_reference("human")
 

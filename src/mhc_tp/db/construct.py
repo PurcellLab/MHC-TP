@@ -1,6 +1,6 @@
 """DEV-ONLY: build a per-species reference Parquet from raw matrices.
 
-Not part of the user runtime. Run via the ``clust-search build-db`` subcommand.
+Not part of the user runtime. Run via the ``mhc-tp build-db`` subcommand.
 """
 
 from __future__ import annotations
@@ -10,9 +10,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from hla_pepclust.io.matrices import parse_matrix
-from hla_pepclust.io.naming import format_allotype
-from hla_pepclust.refdata.parquet_io import write_reference
+from mhc_tp.io.matrices import parse_matrix
+from mhc_tp.io.naming import format_allotype
+from mhc_tp.refdata.parquet_io import write_reference
 
 # Defaults reflect the real <species>.db columns (verified in Step 0).
 DEFAULT_ALLOTYPE_COL = "allotypes"
@@ -55,7 +55,7 @@ def build_species_parquet(
             "source": source,
         }
         if with_logos:
-            from hla_pepclust.db.logos import reference_logo_bytes
+            from mhc_tp.db.logos import reference_logo_bytes
 
             row["logo"] = reference_logo_bytes(
                 matrix_file,

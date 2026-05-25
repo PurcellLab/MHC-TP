@@ -2,7 +2,7 @@
 
 import pytest
 
-from hla_pepclust.naming import pretty_allele
+from mhc_tp.naming import pretty_allele
 
 
 @pytest.mark.parametrize(

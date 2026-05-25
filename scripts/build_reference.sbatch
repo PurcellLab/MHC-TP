@@ -29,10 +29,10 @@ mkdir -p "$OUT"
 
 for SP in human mouse; do
     echo ">>> building ${SP}.parquet (--with-logos)"
-    pixi run clust-search build-ref "$SP" "$C1" "$C2" "$OUT/${SP}.parquet" \
+    pixi run mhc-tp build-ref "$SP" "$C1" "$C2" "$OUT/${SP}.parquet" \
         --with-logos --seq2logo-path "$SEQ2LOGO_PATH" --seq2logo-python "$PY27" \
         --workers "${SLURM_CPUS_PER_TASK:-16}"
 done
 
-echo ">>> done. recompute these into src/hla_pepclust/refdata/reference_manifest.tsv:"
+echo ">>> done. recompute these into src/mhc_tp/refdata/reference_manifest.tsv:"
 sha256sum "$OUT"/human.parquet "$OUT"/mouse.parquet

@@ -3,7 +3,7 @@
 Run as a backend (e.g. the Immunolyser server), MHC-TP must not grab every
 core (numba ``parallel=True`` + BLAS default to all cores) and starve
 co-located programs. The thread budget resolves from, in order: an explicit
-argument, the ``HLA_PEPCLUST_THREADS`` env var, else a conservative default.
+argument, the ``MHC_TP_THREADS`` env var, else a conservative default.
 
 ``apply_thread_env()`` is called at import time of the CLI *before* numpy/numba
 are imported, so the BLAS/OpenMP caps take effect.
@@ -24,9 +24,9 @@ _THREAD_ENV_VARS = (
 
 
 def resolve_threads(threads: int | None = None) -> int:
-    """Thread budget: explicit arg > ``HLA_PEPCLUST_THREADS`` env > default (4)."""
+    """Thread budget: explicit arg > ``MHC_TP_THREADS`` env > default (4)."""
     if threads is None:
-        env = os.environ.get("HLA_PEPCLUST_THREADS")
+        env = os.environ.get("MHC_TP_THREADS")
         threads = int(env) if env and env.isdigit() else _DEFAULT_THREADS
     return max(1, int(threads))
 

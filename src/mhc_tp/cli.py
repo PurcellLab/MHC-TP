@@ -1,4 +1,4 @@
-"""Command-line interface for HLA-PepClust."""
+"""Command-line interface for MHC-TP."""
 
 from __future__ import annotations
 
@@ -6,18 +6,18 @@ import argparse
 import os
 from pathlib import Path
 
-from hla_pepclust.runtime import apply_thread_env
+from mhc_tp.runtime import apply_thread_env
 
 # Bound BLAS/OpenMP/numba thread pools BEFORE numpy/pandas are imported, so the
 # tool stays a good citizen on shared servers (e.g. the Immunolyser backend).
 apply_thread_env()
 
 import pandas as pd  # noqa: E402
-from hla_pepclust import __version__  # noqa: E402
-from hla_pepclust.io.matrices import parse_matrix  # noqa: E402
-from hla_pepclust.refdata.parquet_io import read_reference  # noqa: E402
-from hla_pepclust.refdata.schema import COLUMNS  # noqa: E402
-from hla_pepclust.tui import (  # noqa: E402
+from mhc_tp import __version__  # noqa: E402
+from mhc_tp.io.matrices import parse_matrix  # noqa: E402
+from mhc_tp.refdata.parquet_io import read_reference  # noqa: E402
+from mhc_tp.refdata.schema import COLUMNS  # noqa: E402
+from mhc_tp.tui import (  # noqa: E402
     banner,
     configure_logging,
     results_table,
@@ -58,9 +58,9 @@ def run_search(
 ):
     """Run the search; write correlations.csv and (default) the HTML report."""
     # Lazy import: pulls numba (~1.4s) only when a search actually runs, so
-    # `clust-search --version` / `build-db` stay instant.
-    from hla_pepclust.engine.search import search
-    from hla_pepclust.runtime import apply_numba_threads
+    # `mhc-tp --version` / `build-db` stay instant.
+    from mhc_tp.engine.search import search
+    from mhc_tp.runtime import apply_numba_threads
 
     log = configure_logging(log_level, log_to_file)
     n_threads = apply_numba_threads(threads)
@@ -90,7 +90,7 @@ def run_search(
 
     # Map the raw `formatted` key to the Immunolyser display name; keep both so
     # the CSV stays joinable on `formatted` while showing pretty `hla`.
-    from hla_pepclust.naming import pretty_allele
+    from mhc_tp.naming import pretty_allele
 
     name_map = {r.formatted: pretty_allele(r.allotype) for r in ref.itertuples()}
     rows = [
@@ -113,8 +113,8 @@ def run_search(
 
     log.info("[bold]Stage 4/4[/bold] rendering outputs …")
     if make_html:
-        from hla_pepclust.io.kld import read_kld
-        from hla_pepclust.report.render import render_report
+        from mhc_tp.io.kld import read_kld
+        from mhc_tp.report.render import render_report
 
         kld = None
         try:
@@ -122,7 +122,7 @@ def run_search(
         except FileNotFoundError:
             log.debug("no KLD file found; skipping KLD column")
         # Load embedded Seq2Logo logos ONLY for the matched alleles (targeted read).
-        from hla_pepclust.refdata.parquet_io import load_logos
+        from mhc_tp.refdata.parquet_io import load_logos
 
         logo_map = load_logos(reference, {hla for (_, hla) in cd})
         render_report(
@@ -136,7 +136,7 @@ def run_search(
             logo_map=logo_map,
             name_map=name_map,
         )
-        log.info("HTML report → %s", out_dir / "clust-search-result.html")
+        log.info("HTML report → %s", out_dir / "mhc-tp-result.html")
     log.info("[green]Done. Results in %s[/green]", out_dir)
 
     if log_to_file:
@@ -150,8 +150,8 @@ def main(argv=None):
 
     fmt = {"formatter_class": RichHelpFormatter}
     parser = argparse.ArgumentParser(
-        prog="clust-search",
-        description="HLA-PepClust: cluster immunopeptidomics peptides by HLA/MHC motif",
+        prog="mhc-tp",
+        description="MHC-TP: cluster immunopeptidomics peptides by HLA/MHC motif",
         **fmt,
     )
     parser.add_argument(
@@ -190,7 +190,7 @@ def main(argv=None):
         "--threads",
         type=int,
         default=None,
-        help="max CPU threads for the search (default: $HLA_PEPCLUST_THREADS or 4)",
+        help="max CPU threads for the search (default: $MHC_TP_THREADS or 4)",
     )
 
     b = sub.add_parser("build-db", help="DEV: build a reference parquet", **fmt)
@@ -268,7 +268,7 @@ def main(argv=None):
 
     args = parser.parse_args(argv)
     if args.command == "fetch":
-        from hla_pepclust.refdata.fetch import data_dir, fetch
+        from mhc_tp.refdata.fetch import data_dir, fetch
 
         paths = fetch(args.species, args.dest)
         print(f"fetched {len(paths)} file(s) to {args.dest or data_dir()}:")
@@ -276,7 +276,7 @@ def main(argv=None):
             print(f"  {p}")
         return
     if args.command == "export-logos":
-        from hla_pepclust.refdata.export import export_logos
+        from mhc_tp.refdata.export import export_logos
 
         # Accept both space-separated (nargs) and comma-separated tokens.
         allotypes = None
@@ -291,7 +291,7 @@ def main(argv=None):
         print(f"exported {n} reference logos to {args.output}")
         return
     if args.command == "build-db":
-        from hla_pepclust.db.construct import build_species_parquet
+        from mhc_tp.db.construct import build_species_parquet
 
         build_species_parquet(
             args.db_csv,
@@ -305,7 +305,7 @@ def main(argv=None):
         )
         return
     if args.command == "build-ref":
-        from hla_pepclust.db.pack import build_species_reference
+        from mhc_tp.db.pack import build_species_reference
 
         n_i, n_ii = build_species_reference(
             args.species,
@@ -320,7 +320,7 @@ def main(argv=None):
         print(f"{args.species}: class I={n_i}, class II={n_ii} -> {args.out_parquet}")
         return
     if args.command == "search":
-        from hla_pepclust.refdata.fetch import resolve_reference
+        from mhc_tp.refdata.fetch import resolve_reference
 
         banner()
         reference = str(resolve_reference(args.species, args.reference))

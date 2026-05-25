@@ -1,4 +1,4 @@
-from hla_pepclust.io.naming import format_allotype
+from mhc_tp.io.naming import format_allotype
 
 
 def test_class_i_human():

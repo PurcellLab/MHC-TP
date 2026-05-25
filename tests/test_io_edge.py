@@ -1,9 +1,9 @@
 """Edge-case tests for the io layer.
 
 Covers:
-* ``hla_pepclust.io.matrices.parse_matrix``
-* ``hla_pepclust.io.kld.read_kld``
-* ``hla_pepclust.io.naming.format_allotype``
+* ``mhc_tp.io.matrices.parse_matrix``
+* ``mhc_tp.io.kld.read_kld``
+* ``mhc_tp.io.naming.format_allotype``
 
 These complement the happy-path tests in ``test_io_matrices.py``,
 ``test_io_kld.py`` and ``test_io_naming.py`` by hammering the boundary
@@ -15,9 +15,9 @@ import textwrap
 import numpy as np
 import pytest
 
-from hla_pepclust.io.kld import read_kld
-from hla_pepclust.io.matrices import parse_matrix
-from hla_pepclust.io.naming import format_allotype
+from mhc_tp.io.kld import read_kld
+from mhc_tp.io.matrices import parse_matrix
+from mhc_tp.io.naming import format_allotype
 
 HEADER = "Pos A R N D C Q E G H I L K M F P S T W Y V"
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from hla_pepclust.constants import N_AMINO_ACIDS
+from mhc_tp.constants import N_AMINO_ACIDS
 
 
 def build_reference_array(df: pd.DataFrame) -> tuple[np.ndarray, int]:

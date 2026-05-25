@@ -5,9 +5,9 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 import pandas as pd
-from hla_pepclust.io.matrices import parse_matrix
-from hla_pepclust.refdata.parquet_io import read_reference, write_reference
-from hla_pepclust.refdata.schema import COLUMNS
+from mhc_tp.io.matrices import parse_matrix
+from mhc_tp.refdata.parquet_io import read_reference, write_reference
+from mhc_tp.refdata.schema import COLUMNS
 
 
 @dataclass(frozen=True)
@@ -137,7 +137,7 @@ def build_pack_parquet(
     if logo_tasks:
         from concurrent.futures import ThreadPoolExecutor
 
-        from hla_pepclust.db.logos import reference_logo_bytes
+        from mhc_tp.db.logos import reference_logo_bytes
 
         def _render(task):
             idx, freq_file, title = task

@@ -1,5 +1,5 @@
 import numpy as np
-from hla_pepclust.report.logos import render_logo
+from mhc_tp.report.logos import render_logo
 
 
 def test_render_logo_returns_data_uri():

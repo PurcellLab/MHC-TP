@@ -9,9 +9,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from hla_pepclust.cli import run_search
-from hla_pepclust.io.matrices import parse_matrix
-from hla_pepclust.refdata.parquet_io import write_reference
+from mhc_tp.cli import run_search
+from mhc_tp.io.matrices import parse_matrix
+from mhc_tp.refdata.parquet_io import write_reference
 
 DATA = Path(__file__).parent / "data"
 
@@ -49,7 +49,7 @@ def test_end_to_end_search(tmp_path):
         top_n=2,
     )
     csv = out / "clust_result" / "correlations.csv"
-    html = out / "clust_result" / "clust-search-result.html"
+    html = out / "clust_result" / "mhc-tp-result.html"
     assert csv.exists() and html.exists()
 
     res = pd.read_csv(csv)

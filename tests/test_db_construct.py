@@ -1,7 +1,7 @@
 import textwrap
 import pandas as pd
-from hla_pepclust.db.construct import build_species_parquet
-from hla_pepclust.refdata.parquet_io import read_reference
+from mhc_tp.db.construct import build_species_parquet
+from mhc_tp.refdata.parquet_io import read_reference
 
 
 def test_build_species_parquet(tmp_path):

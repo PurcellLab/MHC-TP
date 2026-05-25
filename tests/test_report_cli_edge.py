@@ -16,9 +16,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from hla_pepclust import runtime
-from hla_pepclust.report import assets, data
-from hla_pepclust.report.render import render_report
+from mhc_tp import runtime
+from mhc_tp.report import assets, data
+from mhc_tp.report.render import render_report
 
 # ---------------------------------------------------------------------------
 # runtime
@@ -26,40 +26,40 @@ from hla_pepclust.report.render import render_report
 
 
 def test_resolve_threads_explicit_wins_over_env(monkeypatch):
-    monkeypatch.setenv("HLA_PEPCLUST_THREADS", "9")
+    monkeypatch.setenv("MHC_TP_THREADS", "9")
     # An explicit argument beats the env var.
     assert runtime.resolve_threads(2) == 2
 
 
 def test_resolve_threads_env_honoured(monkeypatch):
-    monkeypatch.setenv("HLA_PEPCLUST_THREADS", "7")
+    monkeypatch.setenv("MHC_TP_THREADS", "7")
     assert runtime.resolve_threads(None) == 7
 
 
 def test_resolve_threads_default_when_no_env(monkeypatch):
-    monkeypatch.delenv("HLA_PEPCLUST_THREADS", raising=False)
+    monkeypatch.delenv("MHC_TP_THREADS", raising=False)
     assert runtime.resolve_threads(None) == 4
 
 
 def test_resolve_threads_non_numeric_env_falls_back_to_default(monkeypatch):
     # isdigit() guard: a non-numeric env value must not raise; falls back to 4.
-    monkeypatch.setenv("HLA_PEPCLUST_THREADS", "lots")
+    monkeypatch.setenv("MHC_TP_THREADS", "lots")
     assert runtime.resolve_threads(None) == 4
 
 
 def test_resolve_threads_empty_env_falls_back_to_default(monkeypatch):
-    monkeypatch.setenv("HLA_PEPCLUST_THREADS", "")
+    monkeypatch.setenv("MHC_TP_THREADS", "")
     assert runtime.resolve_threads(None) == 4
 
 
 def test_resolve_threads_floors_at_one(monkeypatch):
-    monkeypatch.delenv("HLA_PEPCLUST_THREADS", raising=False)
+    monkeypatch.delenv("MHC_TP_THREADS", raising=False)
     assert runtime.resolve_threads(0) == 1
     assert runtime.resolve_threads(-5) == 1
 
 
 def test_apply_thread_env_sets_all_vars(monkeypatch):
-    monkeypatch.delenv("HLA_PEPCLUST_THREADS", raising=False)
+    monkeypatch.delenv("MHC_TP_THREADS", raising=False)
     for var in runtime._THREAD_ENV_VARS:
         monkeypatch.delenv(var, raising=False)
     n = runtime.apply_thread_env()
@@ -70,7 +70,7 @@ def test_apply_thread_env_sets_all_vars(monkeypatch):
 
 def test_apply_thread_env_does_not_override_existing(monkeypatch):
     # setdefault: an operator-set value must survive untouched.
-    monkeypatch.delenv("HLA_PEPCLUST_THREADS", raising=False)
+    monkeypatch.delenv("MHC_TP_THREADS", raising=False)
     for var in runtime._THREAD_ENV_VARS:
         monkeypatch.delenv(var, raising=False)
     monkeypatch.setenv("OMP_NUM_THREADS", "13")
@@ -282,7 +282,7 @@ def test_render_report_uses_logo_map(tmp_path):
     assert "data:image/png;base64," in html
     assert base64.b64encode(_PNG_1X1).decode("ascii") in html
     assert "const PCC =" in html
-    assert path.endswith("clust-search-result.html")
+    assert path.endswith("mhc-tp-result.html")
 
 
 def test_render_report_empty_correlation_dict(tmp_path):
@@ -290,7 +290,7 @@ def test_render_report_empty_correlation_dict(tmp_path):
     path = render_report({}, ref, {}, str(tmp_path))
     html = open(path).read()
     # Valid HTML produced, no crash.
-    assert path.endswith("clust-search-result.html")
+    assert path.endswith("mhc-tp-result.html")
     assert "const PCC =" in html
     assert "<html" in html.lower()
 
@@ -365,7 +365,7 @@ def test_render_report_skips_unmatched_hla(tmp_path):
         "gibbs.1of1.mat": np.random.default_rng(9).random((9, 20)).astype(np.float32)
     }
     path = render_report(cd, ref, gibbs, str(tmp_path))
-    assert path.endswith("clust-search-result.html")
+    assert path.endswith("mhc-tp-result.html")
 
 
 # ---------------------------------------------------------------------------
@@ -374,7 +374,7 @@ def test_render_report_skips_unmatched_hla(tmp_path):
 
 
 def test_main_version_exits_zero():
-    from hla_pepclust import cli
+    from mhc_tp import cli
 
     with pytest.raises(SystemExit) as exc:
         cli.main(["--version"])
@@ -382,7 +382,7 @@ def test_main_version_exits_zero():
 
 
 def test_main_search_missing_reference_raises():
-    from hla_pepclust import cli
+    from mhc_tp import cli
 
     # resolve_reference raises FileNotFoundError for a non-existent override.
     with pytest.raises(FileNotFoundError):
@@ -400,7 +400,7 @@ def _make_mat_file(path, arr):
 
 
 def test_load_gibbs_matrices_filters_mat_and_n_clusters(tmp_path):
-    from hla_pepclust import cli
+    from mhc_tp import cli
 
     matrices = tmp_path / "matrices"
     matrices.mkdir()
@@ -422,8 +422,8 @@ def test_load_gibbs_matrices_filters_mat_and_n_clusters(tmp_path):
 
 
 def test_run_search_no_html_writes_correlations_csv(tmp_path):
-    from hla_pepclust import cli
-    from hla_pepclust.refdata.parquet_io import write_reference
+    from mhc_tp import cli
+    from mhc_tp.refdata.parquet_io import write_reference
 
     # Build a tiny synthetic reference parquet.
     n = 9
@@ -464,13 +464,13 @@ def test_run_search_no_html_writes_correlations_csv(tmp_path):
     assert (written["hla"] == "HLA_A0201").any()
     assert (written["formatted"] == "A0201").any()
     # No HTML produced when make_html=False.
-    assert not (out / "clust_result" / "clust-search-result.html").exists()
+    assert not (out / "clust_result" / "mhc-tp-result.html").exists()
     assert isinstance(df, pd.DataFrame)
 
 
 def test_run_search_no_matches_writes_empty_csv(tmp_path):
-    from hla_pepclust import cli
-    from hla_pepclust.refdata.parquet_io import write_reference
+    from mhc_tp import cli
+    from mhc_tp.refdata.parquet_io import write_reference
 
     n = 9
     rng = np.random.default_rng(11)

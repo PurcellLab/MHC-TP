@@ -10,7 +10,7 @@ import os
 import re
 from pathlib import Path
 
-from hla_pepclust.refdata.parquet_io import read_reference
+from mhc_tp.refdata.parquet_io import read_reference
 
 _PREFIX_RE = re.compile(r"^(hla|h2)")
 

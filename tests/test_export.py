@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from hla_pepclust.refdata.export import export_logos
-from hla_pepclust.refdata.parquet_io import write_reference
+from mhc_tp.refdata.export import export_logos
+from mhc_tp.refdata.parquet_io import write_reference
 
 
 def _ref_with_logos(tmp_path, with_logo=True):

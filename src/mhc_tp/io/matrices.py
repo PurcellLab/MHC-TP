@@ -8,7 +8,7 @@ from typing import Optional
 
 import numpy as np
 
-from hla_pepclust.constants import N_AMINO_ACIDS
+from mhc_tp.constants import N_AMINO_ACIDS
 
 
 def parse_matrix(file_path: str | os.PathLike) -> Optional[np.ndarray]:

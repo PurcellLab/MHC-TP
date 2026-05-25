@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from hla_pepclust.refdata.parquet_io import write_reference, read_reference
+from mhc_tp.refdata.parquet_io import write_reference, read_reference
 
 
 def _sample_df():

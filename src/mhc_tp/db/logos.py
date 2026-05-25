@@ -20,7 +20,7 @@ def reference_logo_bytes(
     Returns None (rather than raising) when Seq2Logo is not configured, so the
     build degrades gracefully to a logo-less parquet.
     """
-    from hla_pepclust.report.seq2logo import Seq2LogoNotConfigured, Seq2LogoRenderer
+    from mhc_tp.report.seq2logo import Seq2LogoNotConfigured, Seq2LogoRenderer
 
     try:
         renderer = Seq2LogoRenderer(seq2logo_path=seq2logo_path, python_exe=python_exe)

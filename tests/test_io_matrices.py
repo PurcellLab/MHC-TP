@@ -1,5 +1,5 @@
 import numpy as np
-from hla_pepclust.io.matrices import parse_matrix
+from mhc_tp.io.matrices import parse_matrix
 
 
 def test_parse_matrix_shape_and_values(pssm_text):

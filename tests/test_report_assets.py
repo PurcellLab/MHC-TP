@@ -1,6 +1,6 @@
 import base64
 
-from hla_pepclust.report.assets import (
+from mhc_tp.report.assets import (
     find_cluster_logo,
     png_bytes_to_data_uri,
     png_file_to_data_uri,

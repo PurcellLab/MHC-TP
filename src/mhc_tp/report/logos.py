@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-from hla_pepclust.constants import AMINO_ACIDS
+from mhc_tp.constants import AMINO_ACIDS
 
 
 def render_logo(matrix: np.ndarray, title: str | None = None) -> str:

@@ -11,7 +11,7 @@
 # Usage:
 #   scripts/fetch_sources.sh             # fetch + verify + extract all
 #   scripts/fetch_sources.sh --no-extract
-#   HLA_PEPCLUST_RECORD_CHECKSUMS=1 scripts/fetch_sources.sh   # print all checksums
+#   MHC_TP_RECORD_CHECKSUMS=1 scripts/fetch_sources.sh   # print all checksums
 
 set -Eeuo pipefail
 
@@ -23,7 +23,7 @@ MANIFEST="${SRC_DIR}/sources.tsv"
 
 DO_EXTRACT=1
 [[ "${1:-}" == "--no-extract" ]] && DO_EXTRACT=0
-RECORD="${HLA_PEPCLUST_RECORD_CHECKSUMS:-0}"
+RECORD="${MHC_TP_RECORD_CHECKSUMS:-0}"
 
 [[ -f "${MANIFEST}" ]] || { echo "ERROR: manifest not found at ${MANIFEST}" >&2; exit 1; }
 mkdir -p "${RAW_DIR}" "${EXTRACT_DIR}"

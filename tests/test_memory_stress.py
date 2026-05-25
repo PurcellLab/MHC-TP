@@ -23,9 +23,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from hla_pepclust.constants import N_AMINO_ACIDS
-from hla_pepclust.engine.cache import build_reference_array
-from hla_pepclust.engine.search import search
+from mhc_tp.constants import N_AMINO_ACIDS
+from mhc_tp.engine.cache import build_reference_array
+from mhc_tp.engine.search import search
 
 # resource is Unix-only; skip the whole module on Windows.
 if sys.platform.startswith("win"):

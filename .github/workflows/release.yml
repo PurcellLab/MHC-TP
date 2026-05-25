@@ -2,7 +2,7 @@ name: Release
 
 # Publishing a GitHub Release builds the package and uploads it to PyPI.
 # Mark the Release as a "pre-release" to route it to TestPyPI instead, so you
-# can `pip install -i https://test.pypi.org/simple/ hla-pepclust` and verify
+# can `pip install -i https://test.pypi.org/simple/ mhc-tp` and verify
 # before cutting the real thing. The version comes from the release tag via
 # hatch-vcs, so tag final releases like `v2.0.0` and pre-releases like
 # `v2.0.0rc1`.

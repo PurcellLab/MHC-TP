@@ -7,7 +7,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-from hla_pepclust import __version__
+from mhc_tp import __version__
 
 CONSOLE = Console(record=True)  # record=True so logs can be exported to a file
 
@@ -21,10 +21,10 @@ _BANNER = r"""
 
 
 def banner() -> None:
-    """Print the MHC-TP / HLA-PepClust banner + credits."""
+    """Print the MHC-TP banner + credits."""
     CONSOLE.print(_BANNER, style="bold cyan")
     text = Text()
-    text.append("HLA-PepClust ", style="bold")
+    text.append("MHC-TP ", style="bold")
     text.append(f"v{__version__}", style="cyan")
     text.append("  cluster immunopeptidomics peptides by HLA/MHC motif\n", style="dim")
     text.append("Li Lab / Purcell Lab, Monash University", style="dim")

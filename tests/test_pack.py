@@ -1,9 +1,9 @@
-from hla_pepclust.db.pack import (
+from mhc_tp.db.pack import (
     build_pack_parquet,
     build_species_reference,
     classify_allele,
 )
-from hla_pepclust.refdata.parquet_io import read_reference
+from mhc_tp.refdata.parquet_io import read_reference
 
 _HDR = (
     "#cmd\nLast position-specific scoring matrix computed, values are in halfbits\n"

@@ -12,7 +12,7 @@ import logging
 
 from rich.logging import RichHandler
 
-from hla_pepclust.tui.console import CONSOLE
+from mhc_tp.tui.console import CONSOLE
 
 LOG_LEVELS = {
     "critical": logging.CRITICAL,
@@ -22,7 +22,7 @@ LOG_LEVELS = {
     "debug": logging.DEBUG,
 }
 
-_LOGGER_NAME = "hla_pepclust"
+_LOGGER_NAME = "mhc_tp"
 
 
 def configure_logging(
