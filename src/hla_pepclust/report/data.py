@@ -18,17 +18,38 @@ def parse_cluster_id(gibbs_name: str) -> tuple[str, int, int]:
     return (f"{group}of{nclust}", group, nclust)
 
 
-def pcc_records(correlation_dict: dict[tuple[str, str], float]) -> list[dict]:
-    """Records for the D3 heatmap: {Cluster, HLA, Correlation}."""
+def pcc_records(
+    correlation_dict: dict[tuple[str, str], float],
+    name_map: dict[str, str] | None = None,
+) -> list[dict]:
+    """Records for the D3 heatmap: {Cluster, HLA, Correlation}.
+
+    ``name_map`` ({formatted: display}) supplies pretty allele labels.
+    """
+    name_map = name_map or {}
     out = []
     for (gibbs_name, hla), corr in correlation_dict.items():
         cid, _, _ = parse_cluster_id(gibbs_name)
-        out.append({"Cluster": cid, "HLA": hla, "Correlation": round(float(corr), 4)})
+        out.append(
+            {
+                "Cluster": cid,
+                "HLA": name_map.get(hla, hla),
+                "Correlation": round(float(corr), 4),
+            }
+        )
     return out
 
 
-def datatable_rows(correlation_dict, kld_df: pd.DataFrame | None) -> list[dict]:
-    """Rows for the results DataTable, sorted by correlation desc, with KLD."""
+def datatable_rows(
+    correlation_dict,
+    kld_df: pd.DataFrame | None,
+    name_map: dict[str, str] | None = None,
+) -> list[dict]:
+    """Rows for the results DataTable, sorted by correlation desc, with KLD.
+
+    ``name_map`` ({formatted: display}) supplies pretty allele labels.
+    """
+    name_map = name_map or {}
     rows = []
     for (gibbs_name, hla), corr in correlation_dict.items():
         cid, group, nclust = parse_cluster_id(gibbs_name)
@@ -36,7 +57,7 @@ def datatable_rows(correlation_dict, kld_df: pd.DataFrame | None) -> list[dict]:
         rows.append(
             {
                 "cluster": cid,
-                "hla": hla,
+                "hla": name_map.get(hla, hla),
                 "correlation": round(float(corr), 4),
                 "kld": kld,
             }

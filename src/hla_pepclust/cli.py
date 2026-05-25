@@ -88,14 +88,24 @@ def run_search(
     cd = search(ref, gibbs, threshold=threshold, top_n=top_n, hla_filter=hla_filter)
     log.info("[green]Found %d matches above threshold[/green]", len(cd))
 
+    # Map the raw `formatted` key to the Immunolyser display name; keep both so
+    # the CSV stays joinable on `formatted` while showing pretty `hla`.
+    from hla_pepclust.naming import pretty_allele
+
+    name_map = {r.formatted: pretty_allele(r.allotype) for r in ref.itertuples()}
     rows = [
-        {"cluster": name.replace(".mat", ""), "hla": hla, "correlation": round(corr, 4)}
+        {
+            "cluster": name.replace(".mat", ""),
+            "hla": name_map.get(hla, hla),
+            "formatted": hla,
+            "correlation": round(corr, 4),
+        }
         for (name, hla), corr in cd.items()
     ]
     df = (
         pd.DataFrame(rows).sort_values("correlation", ascending=False)
         if rows
-        else pd.DataFrame(columns=["cluster", "hla", "correlation"])
+        else pd.DataFrame(columns=["cluster", "hla", "formatted", "correlation"])
     )
     df.to_csv(out_dir / "correlations.csv", index=False)
     if len(df):
@@ -124,6 +134,7 @@ def run_search(
             version=__version__,
             gibbs_dir=gibbs_dir,
             logo_map=logo_map,
+            name_map=name_map,
         )
         log.info("HTML report → %s", out_dir / "clust-search-result.html")
     log.info("[green]Done. Results in %s[/green]", out_dir)

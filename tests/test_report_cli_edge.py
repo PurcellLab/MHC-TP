@@ -460,8 +460,9 @@ def test_run_search_no_html_writes_correlations_csv(tmp_path):
     csv_path = out / "clust_result" / "correlations.csv"
     assert csv_path.exists()
     written = pd.read_csv(csv_path)
-    assert list(written.columns) == ["cluster", "hla", "correlation"]
-    assert (written["hla"] == "A0201").any()
+    assert list(written.columns) == ["cluster", "hla", "formatted", "correlation"]
+    assert (written["hla"] == "HLA_A0201").any()
+    assert (written["formatted"] == "A0201").any()
     # No HTML produced when make_html=False.
     assert not (out / "clust_result" / "clust-search-result.html").exists()
     assert isinstance(df, pd.DataFrame)
@@ -505,6 +506,6 @@ def test_run_search_no_matches_writes_empty_csv(tmp_path):
     csv_path = out / "clust_result" / "correlations.csv"
     assert csv_path.exists()
     written = pd.read_csv(csv_path)
-    assert list(written.columns) == ["cluster", "hla", "correlation"]
+    assert list(written.columns) == ["cluster", "hla", "formatted", "correlation"]
     assert len(written) == 0
     assert len(df) == 0

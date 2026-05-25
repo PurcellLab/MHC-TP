@@ -33,17 +33,20 @@ def render_report(
     version: str = "",
     gibbs_dir: str | None = None,
     logo_map: dict | None = None,
+    name_map: dict | None = None,
 ) -> str:
     """Write <output_dir>/clust_result/clust-search-result.html and return its path.
 
     ``logo_map`` ({formatted: png_bytes}) supplies reference logos when the
     reference DataFrame was loaded without the heavy ``logo`` column.
+    ``name_map`` ({formatted: display}) supplies pretty allele labels.
     """
     logo_map = logo_map or {}
+    name_map = name_map or {}
     ref_by_fmt = {r.formatted: r for r in reference_df.itertuples()}
 
-    table_rows = datatable_rows(correlation_dict, kld_df)
-    pcc_json = json.dumps(pcc_records(correlation_dict))
+    table_rows = datatable_rows(correlation_dict, kld_df, name_map)
+    pcc_json = json.dumps(pcc_records(correlation_dict, name_map))
 
     # Best HLA per cluster id, grouped by the number of clusters N, with both
     # logos rendered from the matrices.
@@ -59,6 +62,7 @@ def render_report(
         if cid in seen:
             continue
         seen.add(cid)
+        hla_display = name_map.get(hla, hla)
         # Reference logo: embedded Seq2Logo PNG from the parquet if present,
         # else the logomaker fallback rendered from the matrix.
         ref_logo_bytes = logo_map.get(hla) or getattr(ref, "logo", None)
@@ -68,7 +72,7 @@ def render_report(
             ref_mat = np.asarray(ref.matrix, dtype=np.float32).reshape(
                 int(ref.n_positions), N_AMINO_ACIDS
             )
-            ref_logo = _render_logo(ref_mat, title=hla)
+            ref_logo = _render_logo(ref_mat, title=hla_display)
 
         # Cluster logo: GibbsCluster's own Seq2Logo output if available, else fallback.
         cluster_logo = find_cluster_logo(gibbs_dir, cid) if gibbs_dir else None
@@ -82,7 +86,7 @@ def render_report(
             {
                 "cid": cid,
                 "group": group,
-                "hla": hla,
+                "hla": hla_display,
                 "correlation": round(float(corr), 3),
                 "kld": _kld(kld_df, group, nclust),
                 "ref_logo": ref_logo,

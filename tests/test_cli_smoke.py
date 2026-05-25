@@ -38,8 +38,9 @@ def test_run_search_writes_csv(tmp_path):
         make_html=False,
     )
     res = pd.read_csv(out / "clust_result" / "correlations.csv")
-    assert {"cluster", "hla", "correlation"} <= set(res.columns)
-    assert (res["hla"] == "A0201").any()
+    assert {"cluster", "hla", "formatted", "correlation"} <= set(res.columns)
+    assert (res["hla"] == "HLA_A0201").any()
+    assert (res["formatted"] == "A0201").any()
 
 
 def test_run_search_writes_html(tmp_path):
