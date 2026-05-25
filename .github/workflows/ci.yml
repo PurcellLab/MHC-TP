@@ -7,16 +7,16 @@ on:
 
 jobs:
   test:
-    name: test (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        # Linux also covers WSL2 (same userland). macOS + Windows verify
-        # cross-platform behaviour of the numba engine, pyarrow and pathlib.
-        os: [ubuntu-latest, macos-latest, windows-latest]
+    name: test (linux)
+    runs-on: ubuntu-latest
+    # The pixi workspace targets linux-64 only (the dev `seq2logo` env needs
+    # Python 2.7, which has no macOS-arm64/Windows conda builds), so CI runs on
+    # Linux. The published wheel is pure-Python; cross-platform behaviour of the
+    # numba engine / pyarrow is covered by their upstream wheels.
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # hatch-vcs derives the version from tags/history
 
       - name: Set up pixi
         uses: prefix-dev/setup-pixi@v0.8.1
@@ -25,7 +25,9 @@ jobs:
           environments: default
 
       - name: Install package (editable)
-        run: pixi run pip install -e . --no-build-isolation
+        # Build isolation pulls the build backend (hatchling + hatch-vcs) from
+        # build-system.requires; hatch-vcs needs the git history fetched above.
+        run: pixi run pip install -e .
 
       - name: Lint (ruff)
         run: pixi run ruff check src tests
