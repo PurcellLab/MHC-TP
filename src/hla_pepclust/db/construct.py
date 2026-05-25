@@ -27,17 +27,25 @@ def build_species_parquet(
     source: str,
     allotype_col: str = DEFAULT_ALLOTYPE_COL,
     matrix_path_col: str = DEFAULT_MATRIX_PATH_COL,
+    with_logos: bool = False,
+    seq2logo_path: str | None = None,
+    seq2logo_python: str | None = None,
 ) -> None:
-    """Read the legacy <species>.db CSV + matrix files -> write <species>.parquet."""
+    """Read the legacy <species>.db CSV + matrix files -> write <species>.parquet.
+
+    When ``with_logos`` is set, generate a Seq2Logo reference logo per allele
+    (via the external Seq2Logo install) and embed it in a ``logo`` column.
+    """
     db = pd.read_csv(db_csv)
     matrix_root = Path(matrix_root)
     rows = []
     for _, r in db.iterrows():
-        mat = parse_matrix(matrix_root / str(r[matrix_path_col]))
+        matrix_file = matrix_root / str(r[matrix_path_col])
+        mat = parse_matrix(matrix_file)
         if mat is None:
             continue
         info = format_allotype(str(r[allotype_col]), species=species)
-        rows.append({
+        row = {
             "allotype": info.raw,
             "formatted": info.formatted,
             "mhc_class": info.mhc_class,
@@ -45,5 +53,12 @@ def build_species_parquet(
             "n_positions": int(mat.shape[0]),
             "matrix": mat.reshape(-1).tolist(),
             "source": source,
-        })
+        }
+        if with_logos:
+            from hla_pepclust.db.logos import reference_logo_bytes
+            row["logo"] = reference_logo_bytes(
+                matrix_file, seq2logo_path=seq2logo_path,
+                python_exe=seq2logo_python, title=info.raw,
+            )
+        rows.append(row)
     write_reference(pd.DataFrame(rows), out_parquet)

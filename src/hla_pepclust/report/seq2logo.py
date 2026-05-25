@@ -80,8 +80,12 @@ class Seq2LogoRenderer:
         matrix_file = Path(matrix_file)
         if not matrix_file.exists():
             return None
+        # Resolve to absolute paths: render() runs with cwd set to the Seq2Logo
+        # directory, so relative input/output paths would not resolve.
+        matrix_file = matrix_file.resolve()
         out_dir = Path(out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
+        out_dir = out_dir.resolve()
         name = name or matrix_file.stem
         output_path = out_dir / name
         cmd = self.build_command(matrix_file, output_path, title)
