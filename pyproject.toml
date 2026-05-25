@@ -7,6 +7,8 @@ name = "hla-pepclust"
 version = "2.0.0-dev"
 description = "Cluster immunopeptidomics peptides by HLA/MHC binding motif, with an interactive HTML report"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.9,<3.12"
 authors = [{ name = "Sanjay S G Krishna" }]
 dependencies = [
