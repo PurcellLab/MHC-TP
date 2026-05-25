@@ -12,7 +12,7 @@ import logging
 
 from rich.logging import RichHandler
 
-from hla_pepclust.console import CONSOLE
+from hla_pepclust.tui.console import CONSOLE
 
 LOG_LEVELS = {
     "critical": logging.CRITICAL,

@@ -9,9 +9,13 @@ from pathlib import Path
 import pandas as pd
 
 from hla_pepclust import __version__
-from hla_pepclust.console import banner, results_table
 from hla_pepclust.io.matrices import parse_matrix
-from hla_pepclust.log import configure_logging, save_console_log
+from hla_pepclust.tui import (
+    banner,
+    configure_logging,
+    results_table,
+    save_console_log,
+)
 from hla_pepclust.refdata.parquet_io import read_reference
 
 
