@@ -12,9 +12,16 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from hla_pepclust.constants import N_AMINO_ACIDS
 from hla_pepclust.report.assets import find_cluster_logo, png_bytes_to_data_uri
 from hla_pepclust.report.data import datatable_rows, parse_cluster_id, pcc_records
-from hla_pepclust.report.logos import render_logo
 
 _TEMPLATES = Path(__file__).parent / "templates"
+
+
+def _render_logo(*args, **kwargs):
+    """Lazy logomaker fallback: import matplotlib/logomaker (~1.6s) only when a
+    logo actually has to be drawn (i.e. no embedded Seq2Logo / gibbs logo)."""
+    from hla_pepclust.report.logos import render_logo
+
+    return render_logo(*args, **kwargs)
 
 
 def render_report(
@@ -61,14 +68,14 @@ def render_report(
             ref_mat = np.asarray(ref.matrix, dtype=np.float32).reshape(
                 int(ref.n_positions), N_AMINO_ACIDS
             )
-            ref_logo = render_logo(ref_mat, title=hla)
+            ref_logo = _render_logo(ref_mat, title=hla)
 
         # Cluster logo: GibbsCluster's own Seq2Logo output if available, else fallback.
         cluster_logo = find_cluster_logo(gibbs_dir, cid) if gibbs_dir else None
         if not cluster_logo:
             gibbs_mat = gibbs_matrices.get(gibbs_name)
             cluster_logo = (
-                render_logo(gibbs_mat, title=cid) if gibbs_mat is not None else ""
+                _render_logo(gibbs_mat, title=cid) if gibbs_mat is not None else ""
             )
 
         sections.setdefault(nclust, []).append(
