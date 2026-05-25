@@ -37,3 +37,4 @@ packages = ["src/hla_pepclust"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["slow: heavier tests (large reference / memory stress)"]
