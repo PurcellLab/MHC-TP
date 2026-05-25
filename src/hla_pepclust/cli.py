@@ -9,8 +9,9 @@ from pathlib import Path
 import pandas as pd
 
 from hla_pepclust import __version__
-from hla_pepclust.console import CONSOLE, banner, results_table
+from hla_pepclust.console import banner, results_table
 from hla_pepclust.io.matrices import parse_matrix
+from hla_pepclust.log import configure_logging, save_console_log
 from hla_pepclust.refdata.parquet_io import read_reference
 
 
@@ -41,26 +42,36 @@ def run_search(
     top_n=3,
     hla_filter=None,
     make_html=True,
+    log_level="info",
+    log_to_file=False,
 ):
     """Run the search; write correlations.csv and (default) the HTML report."""
     # Lazy import: pulls numba (~1.4s) only when a search actually runs, so
     # `clust-search --version` / `build-db` stay instant.
     from hla_pepclust.engine.search import search
 
+    log = configure_logging(log_level, log_to_file)
+    out_dir = Path(output) / "clust_result"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    log.info("[bold]Stage 1/4[/bold] loading reference …")
     ref = read_reference(reference)
-    CONSOLE.log(
-        f"Loaded reference [bold]{len(ref)}[/bold] {species} allotypes "
-        f"(class I/II) from {reference}",
-        style="cyan",
+    log.info(
+        "Reference: [bold]%d[/bold] %s allotypes (class I+II) from %s",
+        len(ref),
+        species,
+        reference,
     )
+
+    log.info("[bold]Stage 2/4[/bold] parsing Gibbs cluster matrices …")
     gibbs = _load_gibbs_matrices(gibbs_dir)
-    CONSOLE.log(
-        f"Searching [bold]{len(gibbs)}[/bold] Gibbs cluster matrices "
-        f"(threshold {threshold})",
-        style="cyan",
+    log.info("Loaded [bold]%d[/bold] Gibbs matrices from %s", len(gibbs), gibbs_dir)
+
+    log.info(
+        "[bold]Stage 3/4[/bold] numba correlation search (threshold %.2f) …", threshold
     )
     cd = search(ref, gibbs, threshold=threshold, top_n=top_n, hla_filter=hla_filter)
-    CONSOLE.log(f"Found [bold]{len(cd)}[/bold] matches above threshold", style="green")
+    log.info("[green]Found %d matches above threshold[/green]", len(cd))
 
     rows = [
         {"cluster": name.replace(".mat", ""), "hla": hla, "correlation": round(corr, 4)}
@@ -71,13 +82,11 @@ def run_search(
         if rows
         else pd.DataFrame(columns=["cluster", "hla", "correlation"])
     )
-    out_dir = Path(output) / "clust_result"
-    out_dir.mkdir(parents=True, exist_ok=True)
     df.to_csv(out_dir / "correlations.csv", index=False)
     if len(df):
         results_table(df, threshold=threshold)
-    CONSOLE.log(f"Results written to {out_dir}", style="green")
 
+    log.info("[bold]Stage 4/4[/bold] rendering outputs …")
     if make_html:
         from hla_pepclust.io.kld import read_kld
         from hla_pepclust.report.render import render_report
@@ -86,10 +95,15 @@ def run_search(
         try:
             kld = read_kld(Path(gibbs_dir) / "images" / "gibbs.KLDvsClusters.tab")
         except FileNotFoundError:
-            kld = None
+            log.debug("no KLD file found; skipping KLD column")
         render_report(
             cd, ref, gibbs, output, kld_df=kld, version=__version__, gibbs_dir=gibbs_dir
         )
+        log.info("HTML report → %s", out_dir / "clust-search-result.html")
+    log.info("[green]Done. Results in %s[/green]", out_dir)
+
+    if log_to_file:
+        save_console_log(str(out_dir / "search_cluster.log"))
 
     return df
 
@@ -122,6 +136,18 @@ def main(argv=None):
     s.add_argument("-o", "--output", default="output")
     s.add_argument(
         "--no-html", action="store_true", help="skip the HTML report (CSV only)"
+    )
+    s.add_argument(
+        "-l",
+        "--log",
+        action="store_true",
+        help="save the coloured session log to the output dir",
+    )
+    s.add_argument(
+        "--log-level",
+        default="info",
+        choices=["debug", "info", "warning", "error", "critical"],
+        help="logging verbosity (default: info)",
     )
 
     b = sub.add_parser("build-db", help="DEV: build a reference parquet", **fmt)
@@ -219,6 +245,8 @@ def main(argv=None):
             threshold=args.threshold,
             top_n=args.topNHits,
             make_html=not args.no_html,
+            log_level=args.log_level,
+            log_to_file=args.log,
         )
         return
     parser.print_help()

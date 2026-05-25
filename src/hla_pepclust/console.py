@@ -9,7 +9,7 @@ from rich.text import Text
 
 from hla_pepclust import __version__
 
-CONSOLE = Console()
+CONSOLE = Console(record=True)  # record=True so logs can be exported to a file
 
 _BANNER = r"""
  __  __ _  _  ___ ___ _____ ___
