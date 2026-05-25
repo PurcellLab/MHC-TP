@@ -60,13 +60,19 @@ def _pairs_class_ii(base: Path):
 
 
 def build_pack_parquet(pack_dir, mhc_class, species, out_parquet, source):
-    """Build a parquet from a pack for one species. mhc_class in {"I","II"}."""
+    """Build a parquet from a pack for one species. mhc_class in {"I","II"}.
+
+    Uses the LOG-ODDS (halfbits) score matrices so the reference is in the same
+    representation as GibbsCluster output (the search query) — class I
+    ``score_mat_el/<pseudo>.txt``, class II ``log_odds/<pseudo>.txt``. The
+    frequency matrices are for logos, not correlation.
+    """
     base = Path(pack_dir) / "all_logos"
     if mhc_class == "I":
-        mat_dir = base / "freq_mat_el"
+        mat_dir = base / "score_mat_el"
         pairs = _pairs_class_i(base)
     else:
-        mat_dir = base / "freq_mat"
+        mat_dir = base / "log_odds"
         pairs = _pairs_class_ii(base)
     rows, seen = [], set()
     for allele, pseudo in pairs:
@@ -75,7 +81,7 @@ def build_pack_parquet(pack_dir, mhc_class, species, out_parquet, source):
             continue
         if info.formatted in seen:
             continue
-        mat = parse_matrix(mat_dir / (pseudo + "_freq.mat"))
+        mat = parse_matrix(mat_dir / (pseudo + ".txt"))
         if mat is None:
             continue
         seen.add(info.formatted)

@@ -13,11 +13,13 @@ def test_classify():
 
 
 def test_build_pack_parquet(tmp_path):
-    base = tmp_path / "all_logos"; (base/"mhc_names").mkdir(parents=True); (base/"freq_mat_el").mkdir()
+    # Class I correlation matrices come from score_mat_el/<pseudo>.txt (halfbits).
+    base = tmp_path / "all_logos"; (base/"mhc_names").mkdir(parents=True); (base/"score_mat_el").mkdir()
     (base/"mhc_names"/"PS_names.txt").write_text("HLA-A02:01 PS\nBoLA-x PS\n")
-    (base/"freq_mat_el"/"PS_freq.mat").write_text(
-        "#cmd\n#Position Specific Frequency Matrix\nA R N D C Q E G H I L K M F P S T W Y V\n"
-        "1 A " + " ".join(["0.05"]*20) + "\n")
+    (base/"score_mat_el"/"PS.txt").write_text(
+        "#cmd\nLast position-specific scoring matrix computed, values are in halfbits\n"
+        "A R N D C Q E G H I L K M F P S T W Y V\n"
+        "1 A " + " ".join(["0.5"]*20) + "\n")
     n = build_pack_parquet(tmp_path, "I", "human", tmp_path/"h.parquet", "NetMHCpan-4.2")
     assert n == 1
     d = read_reference(tmp_path/"h.parquet")
