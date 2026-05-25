@@ -4,7 +4,7 @@ import numpy as np
 from numba import jit, prange
 
 
-@jit(nopython=True, parallel=True, fastmath=True)
+@jit(nopython=True, parallel=True, fastmath=True, cache=True)
 def compute_all_correlations(gibbs_matrices, ref_matrices, hla_mask, threshold):
     """All-pairs flattened Pearson correlation, parallel over Gibbs matrices.
 

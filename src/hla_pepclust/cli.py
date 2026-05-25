@@ -6,17 +6,23 @@ import argparse
 import os
 from pathlib import Path
 
-import pandas as pd
+from hla_pepclust.runtime import apply_thread_env
 
-from hla_pepclust import __version__
-from hla_pepclust.io.matrices import parse_matrix
-from hla_pepclust.tui import (
+# Bound BLAS/OpenMP/numba thread pools BEFORE numpy/pandas are imported, so the
+# tool stays a good citizen on shared servers (e.g. the Immunolyser backend).
+apply_thread_env()
+
+import pandas as pd  # noqa: E402
+from hla_pepclust import __version__  # noqa: E402
+from hla_pepclust.io.matrices import parse_matrix  # noqa: E402
+from hla_pepclust.refdata.parquet_io import read_reference  # noqa: E402
+from hla_pepclust.refdata.schema import COLUMNS  # noqa: E402
+from hla_pepclust.tui import (  # noqa: E402
     banner,
     configure_logging,
     results_table,
     save_console_log,
 )
-from hla_pepclust.refdata.parquet_io import read_reference
 
 
 def _load_gibbs_matrices(gibbs_dir: str, n_clusters: str = "all") -> dict:
@@ -48,18 +54,23 @@ def run_search(
     make_html=True,
     log_level="info",
     log_to_file=False,
+    threads=None,
 ):
     """Run the search; write correlations.csv and (default) the HTML report."""
     # Lazy import: pulls numba (~1.4s) only when a search actually runs, so
     # `clust-search --version` / `build-db` stay instant.
     from hla_pepclust.engine.search import search
+    from hla_pepclust.runtime import apply_numba_threads
 
     log = configure_logging(log_level, log_to_file)
+    n_threads = apply_numba_threads(threads)
+    log.debug("thread budget: %d", n_threads)
     out_dir = Path(output) / "clust_result"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     log.info("[bold]Stage 1/4[/bold] loading reference …")
-    ref = read_reference(reference)
+    # Load matrices + metadata only (skip the heavy logo blob column) for the search.
+    ref = read_reference(reference, columns=COLUMNS)
     log.info(
         "Reference: [bold]%d[/bold] %s allotypes (class I+II) from %s",
         len(ref),
@@ -100,8 +111,19 @@ def run_search(
             kld = read_kld(Path(gibbs_dir) / "images" / "gibbs.KLDvsClusters.tab")
         except FileNotFoundError:
             log.debug("no KLD file found; skipping KLD column")
+        # Load embedded Seq2Logo logos ONLY for the matched alleles (targeted read).
+        from hla_pepclust.refdata.parquet_io import load_logos
+
+        logo_map = load_logos(reference, {hla for (_, hla) in cd})
         render_report(
-            cd, ref, gibbs, output, kld_df=kld, version=__version__, gibbs_dir=gibbs_dir
+            cd,
+            ref,
+            gibbs,
+            output,
+            kld_df=kld,
+            version=__version__,
+            gibbs_dir=gibbs_dir,
+            logo_map=logo_map,
         )
         log.info("HTML report → %s", out_dir / "clust-search-result.html")
     log.info("[green]Done. Results in %s[/green]", out_dir)
@@ -152,6 +174,12 @@ def main(argv=None):
         default="info",
         choices=["debug", "info", "warning", "error", "critical"],
         help="logging verbosity (default: info)",
+    )
+    s.add_argument(
+        "--threads",
+        type=int,
+        default=None,
+        help="max CPU threads for the search (default: $HLA_PEPCLUST_THREADS or 4)",
     )
 
     b = sub.add_parser("build-db", help="DEV: build a reference parquet", **fmt)
@@ -276,6 +304,7 @@ def main(argv=None):
             make_html=not args.no_html,
             log_level=args.log_level,
             log_to_file=args.log,
+            threads=args.threads,
         )
         return
     parser.print_help()

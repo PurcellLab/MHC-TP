@@ -25,8 +25,14 @@ def render_report(
     kld_df: pd.DataFrame | None = None,
     version: str = "",
     gibbs_dir: str | None = None,
+    logo_map: dict | None = None,
 ) -> str:
-    """Write <output_dir>/clust_result/clust-search-result.html and return its path."""
+    """Write <output_dir>/clust_result/clust-search-result.html and return its path.
+
+    ``logo_map`` ({formatted: png_bytes}) supplies reference logos when the
+    reference DataFrame was loaded without the heavy ``logo`` column.
+    """
+    logo_map = logo_map or {}
     ref_by_fmt = {r.formatted: r for r in reference_df.itertuples()}
 
     table_rows = datatable_rows(correlation_dict, kld_df)
@@ -48,7 +54,7 @@ def render_report(
         seen.add(cid)
         # Reference logo: embedded Seq2Logo PNG from the parquet if present,
         # else the logomaker fallback rendered from the matrix.
-        ref_logo_bytes = getattr(ref, "logo", None)
+        ref_logo_bytes = logo_map.get(hla) or getattr(ref, "logo", None)
         if ref_logo_bytes:
             ref_logo = png_bytes_to_data_uri(ref_logo_bytes)
         else:
