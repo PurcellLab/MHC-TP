@@ -82,11 +82,21 @@ def main(argv=None):
     b.add_argument("species")
     b.add_argument("out_parquet")
     b.add_argument("--source", default="NetMHCpan-4.2")
+    b.add_argument("--with-logos", action="store_true",
+                   help="embed Seq2Logo reference logos (needs SEQ2LOGO_PATH)")
+    b.add_argument("--seq2logo-path", default=os.environ.get("SEQ2LOGO_PATH"),
+                   help="seq2logo-2.1 dir (default: $SEQ2LOGO_PATH)")
+    b.add_argument("--seq2logo-python", default=os.environ.get("SEQ2LOGO_PYTHON"),
+                   help="python2.7 interpreter for Seq2Logo (default: $SEQ2LOGO_PYTHON)")
 
     args = parser.parse_args(argv)
     if args.command == "build-db":
         from hla_pepclust.db.construct import build_species_parquet
-        build_species_parquet(args.db_csv, args.matrix_root, args.species, args.out_parquet, args.source)
+        build_species_parquet(
+            args.db_csv, args.matrix_root, args.species, args.out_parquet, args.source,
+            with_logos=args.with_logos, seq2logo_path=args.seq2logo_path,
+            seq2logo_python=args.seq2logo_python,
+        )
         return
     if args.command == "search":
         run_search(args.gibbs_folder, args.reference, args.species, args.output,

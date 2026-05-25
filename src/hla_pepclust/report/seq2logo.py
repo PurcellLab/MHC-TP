@@ -27,7 +27,7 @@ _KL_PARAMS = {
     "-l": "1",
     "-S": "1",
     "-i": "1",
-    "-p": "5333x4000",
+    "-p": "1600x1200",   # display-sized; keeps the file small without visible loss
     "-s": "40",
     "--format": "PNG",
 }
