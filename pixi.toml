@@ -35,8 +35,16 @@ ruff = ">=0.6"
 pip = ">=24"
 hatchling = ">=1.25"
 
+# Dev-only python2.7 env for Seq2Logo 2.1 (reference-logo generation). Separate
+# solve group from the main 3.11 env.
+[feature.seq2logo.dependencies]
+python = "2.7.*"
+numpy = "1.16.*"   # last py2.7-compatible numpy; Seq2Logo needs >=1.7
+# ghostscript: use the system `gs` (EPS->PNG/PDF); not pinned here.
+
 [environments]
 default = { features = ["dev"], solve-group = "main" }
+seq2logo = { features = ["seq2logo"], no-default-feature = true }
 
 [tasks]
 test = "pytest -q"
