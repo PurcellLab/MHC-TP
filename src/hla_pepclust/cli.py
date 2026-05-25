@@ -255,6 +255,16 @@ def main(argv=None):
     ep.add_argument(
         "-o", "--output", required=True, help="output directory for PNG files"
     )
+    ep.add_argument(
+        "-a",
+        "--allotypes",
+        nargs="+",
+        default=None,
+        metavar="ALLOTYPE",
+        help="allotypes to export, space- and/or comma-separated, e.g. "
+        "'HLA-B*39:124 HLAB3942' or 'HLA-B39:124,A0201' (default: all). "
+        "Matching ignores prefixes/separators.",
+    )
 
     args = parser.parse_args(argv)
     if args.command == "fetch":
@@ -268,7 +278,16 @@ def main(argv=None):
     if args.command == "export-logos":
         from hla_pepclust.refdata.export import export_logos
 
-        n = export_logos(args.reference, args.output)
+        # Accept both space-separated (nargs) and comma-separated tokens.
+        allotypes = None
+        if args.allotypes:
+            allotypes = [
+                a.strip()
+                for chunk in args.allotypes
+                for a in chunk.split(",")
+                if a.strip()
+            ] or None
+        n = export_logos(args.reference, args.output, allotypes)
         print(f"exported {n} reference logos to {args.output}")
         return
     if args.command == "build-db":
