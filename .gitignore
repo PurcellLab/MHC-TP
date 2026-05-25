@@ -54,3 +54,11 @@ data/P6215/
 
 # SLURM job logs
 slurm-*.out
+
+# Python build artifacts
+/dist/
+/build/
+*.egg-info/
+
+# exported reference logos (export-logos output)
+ref_logos/
