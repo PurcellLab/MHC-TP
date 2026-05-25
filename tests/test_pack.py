@@ -1,0 +1,24 @@
+from hla_pepclust.db.pack import classify_allele, build_pack_parquet
+from hla_pepclust.refdata.parquet_io import read_reference
+
+
+def test_classify():
+    a = classify_allele("HLA-A02:352"); assert a.mhc_class=="I" and a.locus=="A" and a.species=="human" and a.formatted=="HLAA02352"
+    assert classify_allele("H-2-Db").locus=="D" and classify_allele("H-2-Db").mhc_class=="I"
+    assert classify_allele("H-2-IAb").locus=="IA" and classify_allele("H-2-IAb").mhc_class=="II"
+    assert classify_allele("DRB1_0101").mhc_class=="II" and classify_allele("DRB1_0101").locus=="DR" and classify_allele("DRB1_0101").species=="human"
+    assert classify_allele("HLA-E01:01").locus=="E"
+    assert classify_allele("BoLA-DRB3_00101") is None
+    assert classify_allele("Mamu-A01:01") is None
+
+
+def test_build_pack_parquet(tmp_path):
+    base = tmp_path / "all_logos"; (base/"mhc_names").mkdir(parents=True); (base/"freq_mat_el").mkdir()
+    (base/"mhc_names"/"PS_names.txt").write_text("HLA-A02:01 PS\nBoLA-x PS\n")
+    (base/"freq_mat_el"/"PS_freq.mat").write_text(
+        "#cmd\n#Position Specific Frequency Matrix\nA R N D C Q E G H I L K M F P S T W Y V\n"
+        "1 A " + " ".join(["0.05"]*20) + "\n")
+    n = build_pack_parquet(tmp_path, "I", "human", tmp_path/"h.parquet", "NetMHCpan-4.2")
+    assert n == 1
+    d = read_reference(tmp_path/"h.parquet")
+    assert d["formatted"].iloc[0]=="HLAA0201" and d["mhc_class"].iloc[0]=="I"
