@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import pandas as pd
 from hla_pepclust.io.matrices import parse_matrix
-from hla_pepclust.refdata.parquet_io import write_reference
+from hla_pepclust.refdata.parquet_io import read_reference, write_reference
 
 
 @dataclass(frozen=True)
@@ -93,3 +93,25 @@ def build_pack_parquet(pack_dir, mhc_class, species, out_parquet, source):
         })
     write_reference(pd.DataFrame(rows), out_parquet)
     return len(rows)
+
+
+def build_species_reference(species, class_i_pack, class_ii_pack, out_parquet,
+                            source_i="NetMHCpan-4.2", source_ii="NetMHCIIpan-4.3"):
+    """Build one ``<species>.parquet`` combining class I + class II from the packs.
+
+    Returns (n_class_i, n_class_ii).
+    """
+    import tempfile
+
+    tmp = Path(tempfile.mkdtemp())
+    pi, pii = tmp / "i.parquet", tmp / "ii.parquet"
+    n_i = build_pack_parquet(class_i_pack, "I", species, pi, source_i)
+    n_ii = build_pack_parquet(class_ii_pack, "II", species, pii, source_ii)
+    frames = []
+    if n_i:
+        frames.append(read_reference(pi))
+    if n_ii:
+        frames.append(read_reference(pii))
+    combined = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+    write_reference(combined, out_parquet)
+    return n_i, n_ii

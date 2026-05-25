@@ -89,6 +89,13 @@ def main(argv=None):
     b.add_argument("--seq2logo-python", default=os.environ.get("SEQ2LOGO_PYTHON"),
                    help="python2.7 interpreter for Seq2Logo (default: $SEQ2LOGO_PYTHON)")
 
+    br = sub.add_parser("build-ref",
+                        help="DEV: build a combined <species>.parquet from class I + II packs")
+    br.add_argument("species")
+    br.add_argument("class_i_pack", help="extracted NetMHCpan class I pack dir")
+    br.add_argument("class_ii_pack", help="extracted NetMHCIIpan class II pack dir")
+    br.add_argument("out_parquet")
+
     args = parser.parse_args(argv)
     if args.command == "build-db":
         from hla_pepclust.db.construct import build_species_parquet
@@ -97,6 +104,12 @@ def main(argv=None):
             with_logos=args.with_logos, seq2logo_path=args.seq2logo_path,
             seq2logo_python=args.seq2logo_python,
         )
+        return
+    if args.command == "build-ref":
+        from hla_pepclust.db.pack import build_species_reference
+        n_i, n_ii = build_species_reference(
+            args.species, args.class_i_pack, args.class_ii_pack, args.out_parquet)
+        print(f"{args.species}: class I={n_i}, class II={n_ii} -> {args.out_parquet}")
         return
     if args.command == "search":
         run_search(args.gibbs_folder, args.reference, args.species, args.output,

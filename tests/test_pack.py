@@ -1,5 +1,16 @@
-from hla_pepclust.db.pack import classify_allele, build_pack_parquet
+from hla_pepclust.db.pack import (
+    build_pack_parquet,
+    build_species_reference,
+    classify_allele,
+)
 from hla_pepclust.refdata.parquet_io import read_reference
+
+_HDR = ("#cmd\nLast position-specific scoring matrix computed, values are in halfbits\n"
+        "A R N D C Q E G H I L K M F P S T W Y V\n")
+
+
+def _score_row(v="0.5"):
+    return "1 A " + " ".join([v] * 20) + "\n"
 
 
 def test_classify():
@@ -24,3 +35,17 @@ def test_build_pack_parquet(tmp_path):
     assert n == 1
     d = read_reference(tmp_path/"h.parquet")
     assert d["formatted"].iloc[0]=="HLAA0201" and d["mhc_class"].iloc[0]=="I"
+
+
+def test_build_species_reference(tmp_path):
+    c1 = tmp_path / "c1" / "all_logos"; (c1 / "mhc_names").mkdir(parents=True); (c1 / "score_mat_el").mkdir()
+    (c1 / "mhc_names" / "P_names.txt").write_text("HLA-A02:01 P\n")
+    (c1 / "score_mat_el" / "P.txt").write_text(_HDR + _score_row("0.5"))
+    c2 = tmp_path / "c2" / "all_logos"; (c2 / "log_odds").mkdir(parents=True)
+    (c2 / "pseudo_mhc_list").write_text("Q DRB1_0101\n")
+    (c2 / "log_odds" / "Q.txt").write_text(_HDR + _score_row("0.3"))
+
+    n_i, n_ii = build_species_reference("human", tmp_path / "c1", tmp_path / "c2", tmp_path / "human.parquet")
+    assert n_i == 1 and n_ii == 1
+    d = read_reference(tmp_path / "human.parquet")
+    assert set(d["mhc_class"]) == {"I", "II"} and len(d) == 2
