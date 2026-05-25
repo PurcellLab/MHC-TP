@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 from hla_pepclust.io.matrices import parse_matrix
 from hla_pepclust.refdata.parquet_io import read_reference, write_reference
+from hla_pepclust.refdata.schema import COLUMNS
 
 
 @dataclass(frozen=True)
@@ -151,7 +152,10 @@ def build_pack_parquet(
             for idx, data in pool.map(_render, logo_tasks):
                 rows[idx]["logo"] = data
 
-    write_reference(pd.DataFrame(rows), out_parquet)
+    # Empty result (e.g. a species with only one MHC class) still writes a valid
+    # parquet with the canonical schema rather than crashing on a column-less frame.
+    df = pd.DataFrame(rows) if rows else pd.DataFrame(columns=list(COLUMNS))
+    write_reference(df, out_parquet)
     return len(rows)
 
 

@@ -4,7 +4,9 @@ import numpy as np
 from numba import jit, prange
 
 
-@jit(nopython=True, parallel=True, fastmath=True, cache=True)
+# NOTE: no fastmath — it would let LLVM assume no-NaN and silently disable the
+# np.isnan() masking below (NaN cells must be excluded, per the docstring).
+@jit(nopython=True, parallel=True, cache=True)
 def compute_all_correlations(gibbs_matrices, ref_matrices, hla_mask, threshold):
     """All-pairs flattened Pearson correlation, parallel over Gibbs matrices.
 
