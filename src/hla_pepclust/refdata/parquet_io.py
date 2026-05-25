@@ -11,12 +11,16 @@ from hla_pepclust.refdata.schema import COLUMNS
 
 
 def write_reference(df: pd.DataFrame, path: str | os.PathLike) -> None:
-    """Write the reference DataFrame to a zstd Parquet with the canonical columns."""
+    """Write the reference DataFrame to a zstd Parquet with the canonical columns.
+
+    The optional ``logo`` column (Seq2Logo PNG bytes) is written when present.
+    """
     missing = set(COLUMNS) - set(df.columns)
     if missing:
         raise ValueError(f"reference df missing columns: {sorted(missing)}")
+    cols = list(COLUMNS) + (["logo"] if "logo" in df.columns else [])
     Path(path).parent.mkdir(parents=True, exist_ok=True)
-    df[COLUMNS].to_parquet(path, engine="pyarrow", compression="zstd", index=False)
+    df[cols].to_parquet(path, engine="pyarrow", compression="zstd", index=False)
 
 
 def read_reference(path: str | os.PathLike) -> pd.DataFrame:

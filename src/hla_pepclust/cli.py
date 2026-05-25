@@ -56,7 +56,8 @@ def run_search(gibbs_dir, reference, species, output, threshold=0.70, top_n=3,
             kld = read_kld(Path(gibbs_dir) / "images" / "gibbs.KLDvsClusters.tab")
         except FileNotFoundError:
             kld = None
-        render_report(cd, ref, gibbs, output, kld_df=kld, version=__version__)
+        render_report(cd, ref, gibbs, output, kld_df=kld, version=__version__,
+                      gibbs_dir=gibbs_dir)
 
     return df
 

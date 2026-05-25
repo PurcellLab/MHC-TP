@@ -10,6 +10,7 @@ import pandas as pd
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from hla_pepclust.constants import N_AMINO_ACIDS
+from hla_pepclust.report.assets import find_cluster_logo, png_bytes_to_data_uri
 from hla_pepclust.report.data import datatable_rows, parse_cluster_id, pcc_records
 from hla_pepclust.report.logos import render_logo
 
@@ -17,7 +18,8 @@ _TEMPLATES = Path(__file__).parent / "templates"
 
 
 def render_report(correlation_dict, reference_df, gibbs_matrices, output_dir,
-                  kld_df: pd.DataFrame | None = None, version: str = "") -> str:
+                  kld_df: pd.DataFrame | None = None, version: str = "",
+                  gibbs_dir: str | None = None) -> str:
     """Write <output_dir>/clust_result/clust-search-result.html and return its path."""
     ref_by_fmt = {r.formatted: r for r in reference_df.itertuples()}
 
@@ -36,17 +38,30 @@ def render_report(correlation_dict, reference_df, gibbs_matrices, output_dir,
         if key in seen:
             continue
         seen.add(key)
-        ref_mat = np.asarray(ref.matrix, dtype=np.float32).reshape(
-            int(ref.n_positions), N_AMINO_ACIDS
-        )
-        gibbs_mat = gibbs_matrices.get(gibbs_name)
+        # Reference logo: embedded Seq2Logo PNG from the parquet if present,
+        # else the logomaker fallback rendered from the matrix.
+        ref_logo_bytes = getattr(ref, "logo", None)
+        if ref_logo_bytes:
+            ref_logo = png_bytes_to_data_uri(ref_logo_bytes)
+        else:
+            ref_mat = np.asarray(ref.matrix, dtype=np.float32).reshape(
+                int(ref.n_positions), N_AMINO_ACIDS
+            )
+            ref_logo = render_logo(ref_mat, title=hla)
+
+        # Cluster logo: GibbsCluster's own Seq2Logo output if available, else fallback.
+        cluster_logo = find_cluster_logo(gibbs_dir, cid) if gibbs_dir else None
+        if not cluster_logo:
+            gibbs_mat = gibbs_matrices.get(gibbs_name)
+            cluster_logo = render_logo(gibbs_mat, title=cid) if gibbs_mat is not None else ""
+
         groups.setdefault(ref.mhc_class, []).append({
             "cluster_id": cid,
             "hla": hla,
             "correlation": round(float(corr), 3),
             "kld": _kld(kld_df, group, nclust),
-            "ref_logo": render_logo(ref_mat, title=hla),
-            "cluster_logo": render_logo(gibbs_mat, title=cid) if gibbs_mat is not None else "",
+            "ref_logo": ref_logo,
+            "cluster_logo": cluster_logo,
         })
 
     class_groups = [{"mhc_class": c, "clusters": groups[c]} for c in sorted(groups)]
