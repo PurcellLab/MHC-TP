@@ -44,3 +44,5 @@ uMAP.py
 
 # pixi local environment (lockfile pixi.lock is committed; the env dir is not)
 .pixi/
+# reference parquets are fetched from the release, not committed (large)
+data/ref_data/*.parquet
