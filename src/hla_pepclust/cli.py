@@ -27,8 +27,9 @@ def _load_gibbs_matrices(gibbs_dir: str, n_clusters: str = "all") -> dict:
     return out
 
 
-def run_search(gibbs_dir, reference, species, output, threshold=0.70, top_n=3, hla_filter=None):
-    """Run the search and write correlations.csv under <output>/clust_result/."""
+def run_search(gibbs_dir, reference, species, output, threshold=0.70, top_n=3,
+               hla_filter=None, make_html=True):
+    """Run the search; write correlations.csv and (default) the HTML report."""
     # Lazy import: pulls numba (~1.4s) only when a search actually runs, so
     # `clust-search --version` / `build-db` stay instant.
     from hla_pepclust.engine.search import search
@@ -45,6 +46,18 @@ def run_search(gibbs_dir, reference, species, output, threshold=0.70, top_n=3, h
     out_dir = Path(output) / "clust_result"
     out_dir.mkdir(parents=True, exist_ok=True)
     df.to_csv(out_dir / "correlations.csv", index=False)
+
+    if make_html:
+        from hla_pepclust.io.kld import read_kld
+        from hla_pepclust.report.render import render_report
+
+        kld = None
+        try:
+            kld = read_kld(Path(gibbs_dir) / "images" / "gibbs.KLDvsClusters.tab")
+        except FileNotFoundError:
+            kld = None
+        render_report(cd, ref, gibbs, output, kld_df=kld, version=__version__)
+
     return df
 
 
@@ -60,6 +73,7 @@ def main(argv=None):
     s.add_argument("-t", "--threshold", type=float, default=0.70)
     s.add_argument("--topNHits", type=int, default=3)
     s.add_argument("-o", "--output", default="output")
+    s.add_argument("--no-html", action="store_true", help="skip the HTML report (CSV only)")
 
     b = sub.add_parser("build-db", help="DEV: build a reference parquet")
     b.add_argument("db_csv")
@@ -75,7 +89,7 @@ def main(argv=None):
         return
     if args.command == "search":
         run_search(args.gibbs_folder, args.reference, args.species, args.output,
-                   threshold=args.threshold, top_n=args.topNHits)
+                   threshold=args.threshold, top_n=args.topNHits, make_html=not args.no_html)
         return
     parser.print_help()
 
