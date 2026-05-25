@@ -33,4 +33,5 @@ def test_render_report_writes_standalone_html(tmp_path):
     assert "data:image/png;base64," in html  # logos inlined
     assert "H2Kb" in html
     assert "const PCC =" in html  # pcc data inlined
+    assert "clusters" in html  # per-cluster-count section heading
     assert path.endswith("clust-search-result.html")

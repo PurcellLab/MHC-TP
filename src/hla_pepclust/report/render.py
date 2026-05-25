@@ -32,9 +32,10 @@ def render_report(
     table_rows = datatable_rows(correlation_dict, kld_df)
     pcc_json = json.dumps(pcc_records(correlation_dict))
 
-    # Best HLA per (cluster, class), with both logos rendered from the matrices.
-    groups: dict[str, list] = {}
-    seen: set[tuple[str, str]] = set()
+    # Best HLA per cluster id, grouped by the number of clusters N, with both
+    # logos rendered from the matrices.
+    sections: dict[int, list] = {}
+    seen: set[str] = set()
     for (gibbs_name, hla), corr in sorted(
         correlation_dict.items(), key=lambda kv: -kv[1]
     ):
@@ -42,10 +43,9 @@ def render_report(
         ref = ref_by_fmt.get(hla)
         if ref is None:
             continue
-        key = (cid, ref.mhc_class)
-        if key in seen:
+        if cid in seen:
             continue
-        seen.add(key)
+        seen.add(cid)
         # Reference logo: embedded Seq2Logo PNG from the parquet if present,
         # else the logomaker fallback rendered from the matrix.
         ref_logo_bytes = getattr(ref, "logo", None)
@@ -65,9 +65,10 @@ def render_report(
                 render_logo(gibbs_mat, title=cid) if gibbs_mat is not None else ""
             )
 
-        groups.setdefault(ref.mhc_class, []).append(
+        sections.setdefault(nclust, []).append(
             {
-                "cluster_id": cid,
+                "cid": cid,
+                "group": group,
                 "hla": hla,
                 "correlation": round(float(corr), 3),
                 "kld": _kld(kld_df, group, nclust),
@@ -76,7 +77,13 @@ def render_report(
             }
         )
 
-    class_groups = [{"mhc_class": c, "clusters": groups[c]} for c in sorted(groups)]
+    cluster_sections = [
+        {
+            "n_clusters": n,
+            "groups": sorted(sections[n], key=lambda c: c["group"]),
+        }
+        for n in sorted(sections)
+    ]
 
     env = Environment(
         loader=FileSystemLoader(str(_TEMPLATES)),
@@ -87,7 +94,7 @@ def render_report(
         version=version,
         pcc_json=pcc_json,
         table_rows=table_rows,
-        class_groups=class_groups,
+        cluster_sections=cluster_sections,
     )
 
     out_dir = Path(output_dir) / "clust_result"

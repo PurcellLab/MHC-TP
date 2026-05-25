@@ -1,150 +1,573 @@
 <!doctype html>
-<html lang="en" data-theme="corporate">
+<html lang="en" data-theme="winter">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="HLA-PepClust cluster search results">
-<title>HLA-PepClust {{ version }}</title>
+<title>MHC-TP &middot; HLA-PepClust {{ version }}</title>
 <!-- daisyUI + Tailwind (CDN) -->
 <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
 <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 <style>
-  .heat-cell { stroke: #fff; }
-  .heat-label { font-size: 10px; fill: currentColor; }
-  .logo-img { width: 100%; height: auto; background: #fff; border-radius: .5rem; }
+  body { color: #2b2b2b; }
+  .section-title { font-weight: 500; letter-spacing: .01em; }
+  .panel { border: 1px solid #e5e7eb; border-radius: .5rem; background: #fff; }
+  .logo-img { width: 100%; height: auto; background: #fff; }
+  .viz { width: 100%; min-height: 420px; position: relative; }
+  .viz svg { display: block; }
+  .tooltip-custom {
+    position: absolute; pointer-events: none; background: #fff;
+    border: 1px solid #d1d5db; border-radius: .375rem; padding: .4rem .55rem;
+    font-size: 12px; color: #2b2b2b; box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    z-index: 50;
+  }
+  .center-network-btn {
+    position: absolute; top: 8px; right: 8px; z-index: 10;
+  }
+  .svg-container { overflow-x: auto; }
 </style>
 </head>
-<body class="bg-base-200 min-h-screen">
+<body class="bg-base-100 min-h-screen">
 
-<div class="navbar bg-base-100 shadow-sm">
-  <div class="flex-1 px-2">
-    <span class="text-xl font-semibold">HLA&#8209;PepClust</span>
-    <span class="badge badge-primary badge-sm ml-2">v{{ version }}</span>
-  </div>
-  <div class="flex-none px-2 text-sm opacity-70">Purcell Lab, Monash University</div>
-</div>
+<main class="max-w-6xl mx-auto px-5 py-8 space-y-10">
 
-<main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
-
-  <!-- Summary stats -->
-  <div class="stats shadow w-full">
-    <div class="stat">
-      <div class="stat-title">Matches</div>
-      <div class="stat-value text-primary">{{ table_rows|length }}</div>
-      <div class="stat-desc">cluster &rarr; HLA/MHC hits</div>
+  <!-- Header -->
+  <header class="space-y-1">
+    <div class="flex items-baseline gap-3">
+      <h1 class="text-2xl font-semibold tracking-tight">MHC-TP</h1>
+      <span class="text-sm text-neutral-500">HLA-PepClust v{{ version }}</span>
     </div>
-    <div class="stat">
-      <div class="stat-title">MHC classes</div>
-      <div class="stat-value">{{ class_groups|length }}</div>
-      <div class="stat-desc">{% for g in class_groups %}Class {{ g.mhc_class }}{% if not loop.last %}, {% endif %}{% endfor %}</div>
-    </div>
-    <div class="stat">
-      <div class="stat-title">Top PCC</div>
-      <div class="stat-value text-success">{{ '%.3f'|format(table_rows[0].correlation) if table_rows else 'n/a' }}</div>
-      <div class="stat-desc">best correlation</div>
-    </div>
-  </div>
+    <p class="text-sm text-neutral-500">Peptide cluster to allotype motif correlation report.</p>
+  </header>
 
   <!-- Results table -->
-  <div class="card bg-base-100 shadow">
-    <div class="card-body">
-      <h2 class="card-title">Correlation summary</h2>
-      <div class="overflow-x-auto">
-        <table id="correlation_table" class="table table-zebra table-sm">
-          <thead><tr><th>#</th><th>Cluster</th><th>Best HLA/MHC</th><th>PCC</th><th>KLD</th></tr></thead>
-          <tbody>
-          {% for r in table_rows %}
-            <tr>
-              <td>{{ loop.index }}</td>
-              <td class="font-mono">{{ r.cluster }}</td>
-              <td class="font-medium">{{ r.hla }}</td>
-              <td><span class="badge {% if r.correlation >= 0.7 %}badge-success{% elif r.correlation >= 0.5 %}badge-warning{% else %}badge-error{% endif %}">{{ '%.3f'|format(r.correlation) }}</span></td>
-              <td>{{ '%.3f'|format(r.kld) if r.kld is not none else 'NA' }}</td>
-            </tr>
-          {% endfor %}
-          </tbody>
-        </table>
-      </div>
+  <section class="space-y-3">
+    <h2 class="section-title text-lg">Results</h2>
+    <div class="panel overflow-x-auto">
+      <table id="correlation_table" class="table table-sm">
+        <thead>
+          <tr class="text-neutral-500">
+            <th>#</th><th>Cluster</th><th>Best HLA/MHC</th><th>PCC</th><th>KLD</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for r in table_rows %}
+          <tr>
+            <td class="text-neutral-400">{{ loop.index }}</td>
+            <td class="font-mono">{{ r.cluster }}</td>
+            <td class="font-medium">{{ r.hla }}</td>
+            <td class="font-mono">
+              <span class="inline-block w-2 h-2 rounded-full align-middle mr-1"
+                    style="background: {% if r.correlation >= 0.7 %}#4d8076{% elif r.correlation >= 0.5 %}#b08968{% else %}#b0b0b0{% endif %};"></span>{{ '%.3f'|format(r.correlation) }}
+            </td>
+            <td class="font-mono text-neutral-600">{{ '%.3f'|format(r.kld) if r.kld is not none else 'NA' }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
     </div>
-  </div>
+  </section>
 
-  <!-- Heatmap -->
-  <div class="card bg-base-100 shadow">
-    <div class="card-body">
-      <h2 class="card-title">Correlation heatmap</h2>
-      <div id="heatmap" class="overflow-x-auto"></div>
+  <!-- Correlation analysis -->
+  <section class="space-y-4">
+    <h2 class="section-title text-lg">Correlation Analysis</h2>
+
+    <div class="flex items-center gap-3 text-sm text-neutral-600">
+      <label for="threshold" class="whitespace-nowrap">PCC threshold</label>
+      <input id="threshold" type="range" min="0" max="1" step="0.01" value="0.70"
+             class="range range-xs range-neutral max-w-xs" />
+      <span id="threshold-value" class="font-mono w-12">0.70</span>
     </div>
-  </div>
 
-  <!-- Per-class logo comparisons -->
-  {% for grp in class_groups %}
-  <div class="card bg-base-100 shadow">
-    <div class="card-body">
-      <h2 class="card-title">Class {{ grp.mhc_class }} &mdash; best matches</h2>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      {% for c in grp.clusters %}
-        <div class="card bg-base-200">
-          <div class="card-body p-4">
-            <div class="flex items-center justify-between flex-wrap gap-2">
-              <span class="font-semibold font-mono">{{ c.cluster_id }} &rarr; {{ c.hla }}</span>
-              <span class="flex gap-1">
-                <span class="badge badge-success badge-sm">PCC {{ '%.2f'|format(c.correlation) }}</span>
-                {% if c.kld is not none %}<span class="badge badge-ghost badge-sm">KLD {{ '%.2f'|format(c.kld) }}</span>{% endif %}
-              </span>
-            </div>
-            <div class="grid grid-cols-2 gap-3 mt-2">
-              <div>
-                <div class="text-xs text-center opacity-60 mb-1">Gibbs Cluster</div>
-                {% if c.cluster_logo %}<img class="logo-img" src="{{ c.cluster_logo }}" alt="cluster logo">{% endif %}
-              </div>
-              <div>
-                <div class="text-xs text-center opacity-60 mb-1">Reference Motif logo of {{ c.hla }}</div>
-                <img class="logo-img" src="{{ c.ref_logo }}" alt="reference logo">
-              </div>
-            </div>
+    <div role="tablist" class="tabs tabs-bordered">
+      <input type="radio" name="viz_tabs" role="tab" class="tab" aria-label="Combined" checked
+             data-pane="combined" />
+      <div role="tabpanel" class="tab-content pt-4">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="panel p-3">
+            <div class="text-sm text-neutral-500 mb-2 text-center">Heatmap</div>
+            <div id="heatmap-container-combined" class="viz"></div>
+          </div>
+          <div class="panel p-3">
+            <div class="text-sm text-neutral-500 mb-2 text-center">Network</div>
+            <div id="network-container-combined" class="viz"></div>
           </div>
         </div>
-      {% endfor %}
+      </div>
+
+      <input type="radio" name="viz_tabs" role="tab" class="tab" aria-label="Heatmap"
+             data-pane="heatmap" />
+      <div role="tabpanel" class="tab-content pt-4">
+        <div class="panel p-3">
+          <div id="heatmap-container-single" class="viz"></div>
+        </div>
+      </div>
+
+      <input type="radio" name="viz_tabs" role="tab" class="tab" aria-label="Network"
+             data-pane="network" />
+      <div role="tabpanel" class="tab-content pt-4">
+        <div class="panel p-3">
+          <div id="network-container-single" class="viz"></div>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
+
+  <!-- Per-cluster-count sections -->
+  {% for sec in cluster_sections %}
+  <section class="space-y-4">
+    <h2 class="section-title text-lg">Results for {{ sec.n_clusters }} clusters</h2>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    {% for c in sec.groups %}
+      <div class="panel p-4 space-y-3">
+        <div class="text-sm text-neutral-700">
+          Best matched allotype is <span class="font-medium">{{ c.hla }}</span>
+          &middot; PCC {{ '%.2f'|format(c.correlation) }}
+          {% if c.kld is not none %}&middot; KLD {{ '%.2f'|format(c.kld) }}{% endif %}
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <div class="text-xs text-center text-neutral-500 mb-1">Gibbs Cluster</div>
+            {% if c.cluster_logo %}<img class="logo-img" src="{{ c.cluster_logo }}" alt="cluster logo">{% endif %}
+          </div>
+          <div>
+            <div class="text-xs text-center text-neutral-500 mb-1">Reference Motif logo of {{ c.hla }}</div>
+            <img class="logo-img" src="{{ c.ref_logo }}" alt="reference logo">
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+    </div>
+  </section>
   {% endfor %}
 
-  <footer class="footer footer-center text-xs opacity-60 p-4">
-    <p>HLA-PepClust v{{ version }} &middot; references: NetMHCpan-4.2 / NetMHCIIpan-4.3, GibbsCluster, MHCMotifAtlas</p>
+  <footer class="border-t border-neutral-200 pt-4 text-xs text-neutral-500">
+    HLA-PepClust v{{ version }} &middot; Li Lab / Purcell Lab, Monash University
+    &middot; references: NetMHCpan-4.2 / NetMHCIIpan-4.3, GibbsCluster, MHCMotifAtlas
   </footer>
 </main>
 
 <script>
 const PCC = {{ pcc_json|safe }};
+// Adapt field names to those the ported D3 expects: d.Cluster, d.HLA, d.Correlation.
+const data = PCC;
+const simulations = {};
 
-// Compact D3 heatmap: clusters (rows) x HLA (cols), coloured by PCC.
-(function () {
-  if (!PCC.length) return;
-  const clusters = [...new Set(PCC.map(d => d.Cluster))].sort();
-  const hlas = [...new Set(PCC.map(d => d.HLA))].sort();
-  const cell = 28, mL = 80, mT = 100;
-  const w = mL + hlas.length * cell + 20;
-  const h = mT + clusters.length * cell + 20;
-  const color = d3.scaleSequential(d3.interpolateYlGnBu).domain([0, 1]);
-  const svg = d3.select('#heatmap').append('svg').attr('width', w).attr('height', h);
-  const x = d3.scaleBand().domain(hlas).range([mL, mL + hlas.length * cell]);
-  const y = d3.scaleBand().domain(clusters).range([mT, mT + clusters.length * cell]);
-  svg.append('g').selectAll('text').data(clusters).join('text')
-     .attr('x', mL - 6).attr('y', d => y(d) + cell / 2)
-     .attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
-     .attr('class', 'heat-label').text(d => d);
-  svg.append('g').selectAll('text').data(hlas).join('text')
-     .attr('transform', d => `translate(${x(d) + cell / 2},${mT - 6}) rotate(-90)`)
-     .attr('class', 'heat-label').text(d => d);
-  svg.append('g').selectAll('rect').data(PCC).join('rect')
-     .attr('x', d => x(d.HLA)).attr('y', d => y(d.Cluster))
-     .attr('width', cell - 2).attr('height', cell - 2)
-     .attr('class', 'heat-cell').attr('fill', d => color(d.Correlation))
-     .append('title').text(d => `${d.Cluster} -> ${d.HLA}: ${d.Correlation}`);
-})();
+const clusterColors = {
+  "1of2": "#FF7F00", "2of2": "#FF7F00",
+  "1of3": "#984EA3", "2of3": "#984EA3", "3of3": "#984EA3",
+  "1of4": "#4DAF4A", "2of4": "#4DAF4A", "3of4": "#4DAF4A", "4of4": "#4DAF4A",
+  "1of5": "#377EB8", "2of5": "#377EB8", "3of5": "#377EB8", "4of5": "#377EB8", "5of5": "#377EB8",
+  "1of6": "#E41A1C", "2of6": "#E41A1C", "3of6": "#E41A1C", "4of6": "#E41A1C", "5of6": "#E41A1C", "6of6": "#E41A1C"
+};
+
+// Tooltip
+const tooltip = d3.select("body")
+  .append("div")
+  .attr("class", "tooltip-custom")
+  .style("opacity", 0);
+
+// Current threshold value
+let threshold = 0.70;
+
+// Initialize visualizations
+createHeatmap("heatmap-container-combined", threshold);
+createNetwork("network-container-combined", threshold);
+createHeatmap("heatmap-container-single", threshold);
+createNetwork("network-container-single", threshold);
+
+// Threshold slider
+const thresholdSlider = document.getElementById("threshold");
+const thresholdValueDisplay = document.getElementById("threshold-value");
+
+thresholdSlider.addEventListener("input", function () {
+  threshold = parseFloat(this.value);
+  thresholdValueDisplay.textContent = threshold.toFixed(2);
+  createHeatmap("heatmap-container-combined", threshold);
+  createNetwork("network-container-combined", threshold);
+  createHeatmap("heatmap-container-single", threshold);
+  createNetwork("network-container-single", threshold);
+});
+
+// Re-render the single-view charts when their tab becomes active (sizes change).
+document.querySelectorAll('input[name="viz_tabs"]').forEach(tab => {
+  tab.addEventListener("change", function () {
+    const pane = this.getAttribute("data-pane");
+    if (pane === "heatmap") {
+      createHeatmap("heatmap-container-single", threshold);
+    } else if (pane === "network") {
+      createNetwork("network-container-single", threshold);
+    } else {
+      createHeatmap("heatmap-container-combined", threshold);
+      createNetwork("network-container-combined", threshold);
+    }
+  });
+});
+
+// Create heatmap visualization
+function createHeatmap(containerId, threshold) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+
+  const filteredData = data.filter(d => d.Correlation >= threshold);
+
+  if (filteredData.length === 0) {
+    const noDataMsg = document.createElement("div");
+    noDataMsg.className = "text-center p-4 text-neutral-400 text-sm";
+    noDataMsg.textContent = "No data to display with current threshold";
+    container.appendChild(noDataMsg);
+    return;
+  }
+
+  const clusters = [...new Set(filteredData.map(d => d.Cluster))].sort();
+  const hlaTypes = [...new Set(filteredData.map(d => d.HLA))].sort();
+
+  const containerWidth = container.clientWidth || 800;
+  const maxCellSize = 40;
+  const minCellSize = 25;
+  const availableWidth = containerWidth - 150;
+  const cellSize = Math.max(minCellSize, Math.min(maxCellSize, availableWidth / hlaTypes.length));
+
+  const margin = { top: 50, right: 20, bottom: 180, left: 100 };
+  const width = cellSize * hlaTypes.length + margin.left + margin.right;
+  const height = cellSize * clusters.length + margin.top + margin.bottom;
+
+  const svgContainer = document.createElement('div');
+  svgContainer.className = 'svg-container';
+  container.appendChild(svgContainer);
+
+  const svg = d3.select(svgContainer)
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .attr("viewBox", `0 0 ${width} ${height}`)
+    .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  const x = d3.scaleBand().domain(hlaTypes).range([0, cellSize * hlaTypes.length]).padding(0.05);
+  const y = d3.scaleBand().domain(clusters).range([0, cellSize * clusters.length]).padding(0.05);
+  const colorScale = d3.scaleSequential(d3.interpolateYlGnBu).domain([0, 1]);
+
+  svg.append("g")
+    .selectAll("text")
+    .data(clusters)
+    .enter()
+    .append("text")
+    .attr("x", -10)
+    .attr("y", d => y(d) + y.bandwidth() / 2)
+    .attr("text-anchor", "end")
+    .attr("dominant-baseline", "middle")
+    .text(d => d)
+    .style("font-size", "12px")
+    .style("font-weight", "500");
+
+  const labelGroup = svg.append("g").attr("class", "axis-labels");
+  hlaTypes.forEach((d, i) => {
+    const xPos = x(d) + x.bandwidth() / 2;
+    const hlaType = d.replace("HLA_", "");
+    const isEven = i % 2 === 0;
+    labelGroup.append("text")
+      .attr("x", xPos)
+      .attr("y", isEven ? -10 : -30)
+      .attr("text-anchor", "middle")
+      .attr("dominant-baseline", "middle")
+      .text(hlaType)
+      .style("font-size", "10px")
+      .style("font-weight", "500");
+    labelGroup.append("line")
+      .attr("x1", xPos)
+      .attr("y1", isEven ? -5 : -25)
+      .attr("x2", xPos)
+      .attr("y2", -5)
+      .style("stroke", "#ddd")
+      .style("stroke-width", 0.5)
+      .style("stroke-dasharray", "2,2");
+  });
+
+  svg.selectAll("rect")
+    .data(filteredData)
+    .enter()
+    .append("rect")
+    .attr("x", d => x(d.HLA))
+    .attr("y", d => y(d.Cluster))
+    .attr("width", x.bandwidth())
+    .attr("height", y.bandwidth())
+    .style("fill", d => colorScale(d.Correlation))
+    .style("stroke", "#fff")
+    .style("stroke-width", "1px")
+    .on("mouseover", function (event, d) {
+      d3.select(this).style("stroke", "#333").style("stroke-width", "2px");
+      tooltip.transition().duration(200).style("opacity", 1);
+      tooltip.html(`
+        <strong>Cluster:</strong> ${d.Cluster}<br>
+        <strong>HLA:</strong> ${d.HLA}<br>
+        <strong>Correlation:</strong> ${d.Correlation.toFixed(2)}
+      `)
+      .style("left", (event.pageX + 10) + "px")
+      .style("top", (event.pageY - 28) + "px");
+    })
+    .on("mouseout", function () {
+      d3.select(this).style("stroke", "#fff").style("stroke-width", "1px");
+      tooltip.transition().duration(500).style("opacity", 0);
+    });
+
+  svg.selectAll("text.cell-text")
+    .data(filteredData)
+    .enter()
+    .append("text")
+    .attr("class", "cell-text")
+    .attr("x", d => x(d.HLA) + x.bandwidth() / 2)
+    .attr("y", d => y(d.Cluster) + y.bandwidth() / 2)
+    .attr("text-anchor", "middle")
+    .attr("dominant-baseline", "middle")
+    .text(d => d.Correlation.toFixed(2))
+    .style("fill", d => d.Correlation > 0.5 ? "white" : "black")
+    .style("font-size", "11px")
+    .style("font-weight", "bold");
+}
+
+// Create network visualization
+function createNetwork(containerId, threshold) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+
+  const centerBtn = document.createElement("button");
+  centerBtn.className = "btn btn-xs btn-ghost center-network-btn";
+  centerBtn.textContent = "Center View";
+  centerBtn.onclick = function () { centerNetwork(containerId); };
+  container.appendChild(centerBtn);
+
+  const filteredData = data.filter(d => d.Correlation >= threshold);
+
+  if (filteredData.length === 0) {
+    const noDataMsg = document.createElement("div");
+    noDataMsg.className = "text-center p-4 text-neutral-400 text-sm";
+    noDataMsg.textContent = "No data to display with current threshold";
+    container.appendChild(noDataMsg);
+    return;
+  }
+
+  const clusters = [...new Set(filteredData.map(d => d.Cluster))];
+  const hlaTypes = [...new Set(filteredData.map(d => d.HLA))];
+
+  const nodes = [
+    ...clusters.map(c => ({ id: c, group: "cluster" })),
+    ...hlaTypes.map(h => ({ id: h, group: "hla" }))
+  ];
+
+  const links = filteredData.map(d => ({
+    source: d.Cluster,
+    target: d.HLA,
+    value: d.Correlation
+  }));
+
+  const width = container.clientWidth || 800;
+  const height = container.clientHeight || 420;
+
+  const svg = d3.select(container)
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+  const zoom = d3.zoom()
+    .scaleExtent([0.5, 5])
+    .on("zoom", (event) => { g.attr("transform", event.transform); });
+
+  svg.call(zoom);
+
+  const g = svg.append("g");
+
+  const simulation = d3.forceSimulation(nodes)
+    .force("link", d3.forceLink(links).id(d => d.id).distance(d => 100 - d.value * 40))
+    .force("charge", d3.forceManyBody().strength(-100))
+    .force("center", d3.forceCenter(width / 2, height / 2))
+    .force("collision", d3.forceCollide().radius(d => d.group === "cluster" ? 25 : 10))
+    .force("x", d3.forceX(width / 2).strength(0.05))
+    .force("y", d3.forceY(height / 2).strength(0.05));
+
+  simulations[containerId] = simulation;
+
+  const link = g.append("g")
+    .selectAll("line")
+    .data(links)
+    .enter()
+    .append("line")
+    .attr("stroke-width", d => Math.max(1, d.value * 3))
+    .attr("stroke", d => clusterColors[d.source.id] || "#999")
+    .attr("opacity", 0.6);
+
+  const node = g.append("g")
+    .selectAll("circle")
+    .data(nodes)
+    .enter()
+    .append("circle")
+    .attr("r", d => d.group === "cluster" ? 15 : 6)
+    .attr("fill", d => d.group === "cluster" ? (clusterColors[d.id] || "#999") : "#ccc")
+    .attr("stroke", "#fff")
+    .attr("stroke-width", 1.5)
+    .on("mouseover", function (event, d) {
+      d3.select(this).attr("stroke", "#333").attr("stroke-width", 2);
+      tooltip.transition().duration(200).style("opacity", 1);
+      if (d.group === "cluster") {
+        const clusterData = filteredData.filter(item => item.Cluster === d.id);
+        const avgCorrelation = clusterData.reduce((sum, item) => sum + item.Correlation, 0) / clusterData.length;
+        tooltip.html(`
+          <strong>${d.id}</strong><br>
+          Average Correlation: ${avgCorrelation.toFixed(3)}<br>
+          HLA Connections: ${clusterData.length}
+        `);
+      } else {
+        const connections = filteredData.filter(item => item.HLA === d.id)
+          .sort((a, b) => b.Correlation - a.Correlation);
+        let html = `<strong>${d.id}</strong><br><table style="border-collapse: collapse;">
+          <tr><th style="padding: 3px; text-align: left;">Cluster</th>
+          <th style="padding: 3px; text-align: right;">Correlation</th></tr>`;
+        connections.forEach(conn => {
+          html += `<tr>
+            <td style="padding: 3px;">${conn.Cluster}</td>
+            <td style="padding: 3px; text-align: right;">${conn.Correlation.toFixed(2)}</td>
+          </tr>`;
+        });
+        html += `</table>`;
+        tooltip.html(html);
+      }
+      tooltip.style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 28) + "px");
+      if (d.group === "cluster") {
+        link.attr("opacity", l => l.source.id === d.id ? 1 : 0.1)
+          .attr("stroke-width", l => l.source.id === d.id ? Math.max(2, l.value * 4) : 1);
+      } else {
+        link.attr("opacity", l => l.target.id === d.id ? 1 : 0.1)
+          .attr("stroke-width", l => l.target.id === d.id ? Math.max(2, l.value * 4) : 1);
+      }
+    })
+    .on("mouseout", function () {
+      d3.select(this).attr("stroke", "#fff").attr("stroke-width", 1.5);
+      tooltip.transition().duration(500).style("opacity", 0);
+      link.attr("opacity", 0.6).attr("stroke-width", d => Math.max(1, d.value * 3));
+    })
+    .call(d3.drag()
+      .on("start", dragstarted)
+      .on("drag", dragged)
+      .on("end", dragended)
+    );
+
+  g.append("g")
+    .selectAll("text")
+    .data(nodes.filter(d => d.group === "cluster"))
+    .enter()
+    .append("text")
+    .attr("text-anchor", "middle")
+    .attr("dominant-baseline", "middle")
+    .text(d => d.id)
+    .style("font-size", "12px")
+    .style("fill", "white")
+    .style("pointer-events", "none");
+
+  g.append("g")
+    .selectAll("text.hla-label")
+    .data(nodes.filter(d => {
+      if (d.group !== "hla") return false;
+      const maxCorr = Math.max(...filteredData
+        .filter(item => item.HLA === d.id)
+        .map(item => item.Correlation));
+      return maxCorr > 0.7;
+    }))
+    .enter()
+    .append("text")
+    .attr("class", "hla-label")
+    .attr("dx", 8)
+    .attr("dy", 3)
+    .text(d => d.id.replace("HLA_", ""))
+    .style("font-size", "8px")
+    .style("fill", "#333")
+    .style("pointer-events", "none");
+
+  simulation.on("tick", () => {
+    nodes.forEach(d => {
+      const padding = d.group === "cluster" ? 20 : 10;
+      d.x = Math.max(padding, Math.min(width - padding, d.x));
+      d.y = Math.max(padding, Math.min(height - padding, d.y));
+    });
+
+    link
+      .attr("x1", d => d.source.x)
+      .attr("y1", d => d.source.y)
+      .attr("x2", d => d.target.x)
+      .attr("y2", d => d.target.y);
+
+    node
+      .attr("cx", d => d.x)
+      .attr("cy", d => d.y);
+
+    g.selectAll("text")
+      .filter(function () { return !this.classList.contains("hla-label"); })
+      .data(nodes.filter(d => d.group === "cluster"))
+      .attr("x", d => d.x)
+      .attr("y", d => d.y);
+
+    g.selectAll("text.hla-label")
+      .data(nodes.filter(d => d.group === "hla" && filteredData
+        .filter(item => item.HLA === d.id)
+        .some(item => item.Correlation > 0.7)))
+      .attr("x", d => d.x)
+      .attr("y", d => d.y);
+  });
+
+  setTimeout(() => {
+    const clusterNodes = nodes.filter(d => d.group === "cluster");
+    const radius = Math.min(width, height) / 3;
+    const angleStep = (2 * Math.PI) / clusterNodes.length;
+    clusterNodes.forEach((d, i) => {
+      const angle = i * angleStep;
+      d.x = width / 2 + radius * Math.cos(angle);
+      d.y = height / 2 + radius * Math.sin(angle);
+      d.fx = d.x;
+      d.fy = d.y;
+    });
+    simulation.alpha(1).restart();
+    setTimeout(() => {
+      clusterNodes.forEach(d => { d.fx = null; d.fy = null; });
+      simulation.alpha(0.3).restart();
+    }, 1000);
+  }, 100);
+
+  function dragstarted(event, d) {
+    if (!event.active) simulation.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+  }
+  function dragged(event, d) {
+    d.fx = event.x;
+    d.fy = event.y;
+  }
+  function dragended(event, d) {
+    if (!event.active) simulation.alphaTarget(0);
+    d.fx = null;
+    d.fy = null;
+  }
+}
+
+// Center network view
+function centerNetwork(containerId) {
+  const container = document.getElementById(containerId);
+  const svg = d3.select(container).select("svg");
+  const simulation = simulations[containerId];
+  if (svg.empty() || !simulation) return;
+  svg.transition().duration(750).call(
+    d3.zoom().transform,
+    d3.zoomIdentity.translate(0, 0).scale(1)
+  );
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+  simulation.force("center", d3.forceCenter(width / 2, height / 2))
+    .alpha(1)
+    .restart();
+}
 </script>
 </body>
 </html>
