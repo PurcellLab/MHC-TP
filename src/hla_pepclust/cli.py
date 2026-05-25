@@ -9,7 +9,6 @@ from pathlib import Path
 import pandas as pd
 
 from hla_pepclust import __version__
-from hla_pepclust.engine.search import search
 from hla_pepclust.io.matrices import parse_matrix
 from hla_pepclust.refdata.parquet_io import read_reference
 
@@ -30,6 +29,10 @@ def _load_gibbs_matrices(gibbs_dir: str, n_clusters: str = "all") -> dict:
 
 def run_search(gibbs_dir, reference, species, output, threshold=0.70, top_n=3, hla_filter=None):
     """Run the search and write correlations.csv under <output>/clust_result/."""
+    # Lazy import: pulls numba (~1.4s) only when a search actually runs, so
+    # `clust-search --version` / `build-db` stay instant.
+    from hla_pepclust.engine.search import search
+
     ref = read_reference(reference)
     gibbs = _load_gibbs_matrices(gibbs_dir)
     cd = search(ref, gibbs, threshold=threshold, top_n=top_n, hla_filter=hla_filter)
