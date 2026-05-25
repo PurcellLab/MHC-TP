@@ -1,22 +1,254 @@
 <!doctype html>
-<html lang="en" data-theme="winter">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="HLA-PepClust cluster search results">
 <title>MHC-TP &middot; HLA-PepClust {{ version }}</title>
-<!-- daisyUI + Tailwind (CDN) -->
-<link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
-<link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
-<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 <style>
-  body { color: #2b2b2b; }
-  .section-title { font-weight: 500; letter-spacing: .01em; }
-  .panel { border: 1px solid #e5e7eb; border-radius: .5rem; background: #fff; }
+  :root {
+    --text: #2b2b2b;
+    --muted: #6b7280;
+    --faint: #9ca3af;
+    --border: #e5e7eb;
+    --bg: #f9fafb;
+    --panel: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+                 Arial, "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.5;
+    font-size: 15px;
+    min-height: 100vh;
+  }
+  .mono {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+                 "Liberation Mono", monospace;
+  }
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1.25rem;
+  }
+  section, header { margin-bottom: 2.5rem; }
+
+  /* Header */
+  header { margin-bottom: 2.5rem; }
+  .header-row {
+    display: flex;
+    align-items: baseline;
+    gap: .75rem;
+  }
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    margin: 0;
+  }
+  .header-version {
+    font-size: .875rem;
+    color: var(--muted);
+  }
+  .header-sub {
+    font-size: .875rem;
+    color: var(--muted);
+    margin: .25rem 0 0;
+  }
+
+  .section-title {
+    font-weight: 500;
+    letter-spacing: .01em;
+    font-size: 1.125rem;
+    margin: 0 0 .75rem;
+  }
+
+  /* Panels */
+  .panel {
+    border: 1px solid var(--border);
+    border-radius: .5rem;
+    background: var(--panel);
+  }
+  .panel-pad { padding: 1rem; }
+  .overflow-x { overflow-x: auto; }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .875rem;
+  }
+  thead th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--muted);
+    padding: .6rem .75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody td {
+    padding: .5rem .75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  .cell-index { color: var(--faint); }
+  .cell-strong { font-weight: 500; }
+  .cell-muted { color: var(--muted); }
+  .dot {
+    display: inline-block;
+    width: .5rem;
+    height: .5rem;
+    border-radius: 9999px;
+    vertical-align: middle;
+    margin-right: .35rem;
+  }
+
+  /* Threshold control */
+  .threshold-row {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    font-size: .875rem;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+  .threshold-row label { white-space: nowrap; }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    max-width: 20rem;
+    height: 4px;
+    border-radius: 9999px;
+    background: var(--border);
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 9999px;
+    background: var(--text);
+    border: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 9999px;
+    background: var(--text);
+    border: none;
+    cursor: pointer;
+  }
+  #threshold-value {
+    width: 3rem;
+    color: var(--text);
+  }
+
+  /* Tabs (radio + label, framework-free) */
+  .tabs { width: 100%; }
+  .tablist {
+    display: flex;
+    gap: .25rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1rem;
+  }
+  .tabs input[name="viz_tabs"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+  .tab-label {
+    padding: .5rem .9rem;
+    font-size: .875rem;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    user-select: none;
+  }
+  .tab-label:hover { color: var(--text); }
+  .tab-content { display: none; }
+  /* Show the pane whose radio is checked. Order in markup:
+     combined-input, combined-pane, heatmap-input, heatmap-pane, network-input, network-pane.
+     Highlight the active tab label. */
+  #tab-combined:checked ~ .tablist label[for="tab-combined"],
+  #tab-heatmap:checked ~ .tablist label[for="tab-heatmap"],
+  #tab-network:checked ~ .tablist label[for="tab-network"] {
+    color: var(--text);
+    border-bottom-color: var(--text);
+    font-weight: 500;
+  }
+  #tab-combined:checked ~ #pane-combined,
+  #tab-heatmap:checked ~ #pane-heatmap,
+  #tab-network:checked ~ #pane-network {
+    display: block;
+  }
+
+  /* Grid layouts */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .logo-pair {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: .75rem;
+  }
+  @media (min-width: 768px) {
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .card-grid { grid-template-columns: 1fr 1fr; }
+    .logo-pair { grid-template-columns: 1fr 1fr; }
+  }
+
+  .viz-title {
+    font-size: .875rem;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: .5rem;
+  }
   .logo-img { width: 100%; height: auto; background: #fff; }
+  .logo-caption {
+    font-size: .75rem;
+    text-align: center;
+    color: var(--muted);
+    margin-bottom: .25rem;
+  }
+
+  /* Cards */
+  .card { padding: 1rem; }
+  .card-head {
+    font-size: .875rem;
+    color: #374151;
+    margin-bottom: .75rem;
+  }
+  .card-head .hla { font-weight: 500; }
+
+  /* Visualizations */
   .viz { width: 100%; min-height: 420px; position: relative; }
   .viz svg { display: block; }
+  .no-data {
+    text-align: center;
+    padding: 1rem;
+    color: var(--faint);
+    font-size: .875rem;
+  }
   .tooltip-custom {
     position: absolute; pointer-events: none; background: #fff;
     border: 1px solid #d1d5db; border-radius: .375rem; padding: .4rem .55rem;
@@ -25,44 +257,65 @@
   }
   .center-network-btn {
     position: absolute; top: 8px; right: 8px; z-index: 10;
+    font: inherit;
+    font-size: .75rem;
+    padding: .2rem .5rem;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: .375rem;
+    cursor: pointer;
+  }
+  .center-network-btn:hover {
+    color: var(--text);
+    background: var(--bg);
   }
   .svg-container { overflow-x: auto; }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+    font-size: .75rem;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
 </style>
 </head>
-<body class="bg-base-100 min-h-screen">
+<body>
 
-<main class="max-w-6xl mx-auto px-5 py-8 space-y-10">
+<main>
 
   <!-- Header -->
-  <header class="space-y-1">
-    <div class="flex items-baseline gap-3">
-      <h1 class="text-2xl font-semibold tracking-tight">MHC-TP</h1>
-      <span class="text-sm text-neutral-500">HLA-PepClust v{{ version }}</span>
+  <header>
+    <div class="header-row">
+      <h1>MHC-TP</h1>
+      <span class="header-version">HLA-PepClust v{{ version }}</span>
     </div>
-    <p class="text-sm text-neutral-500">Peptide cluster to allotype motif correlation report.</p>
+    <p class="header-sub">Peptide cluster to allotype motif correlation report.</p>
   </header>
 
   <!-- Results table -->
-  <section class="space-y-3">
-    <h2 class="section-title text-lg">Results</h2>
-    <div class="panel overflow-x-auto">
-      <table id="correlation_table" class="table table-sm">
+  <section>
+    <h2 class="section-title">Results</h2>
+    <div class="panel overflow-x">
+      <table id="correlation_table">
         <thead>
-          <tr class="text-neutral-500">
+          <tr>
             <th>#</th><th>Cluster</th><th>Best HLA/MHC</th><th>PCC</th><th>KLD</th>
           </tr>
         </thead>
         <tbody>
         {% for r in table_rows %}
           <tr>
-            <td class="text-neutral-400">{{ loop.index }}</td>
-            <td class="font-mono">{{ r.cluster }}</td>
-            <td class="font-medium">{{ r.hla }}</td>
-            <td class="font-mono">
-              <span class="inline-block w-2 h-2 rounded-full align-middle mr-1"
+            <td class="cell-index">{{ loop.index }}</td>
+            <td class="mono">{{ r.cluster }}</td>
+            <td class="cell-strong">{{ r.hla }}</td>
+            <td class="mono">
+              <span class="dot"
                     style="background: {% if r.correlation >= 0.7 %}#4d8076{% elif r.correlation >= 0.5 %}#b08968{% else %}#b0b0b0{% endif %};"></span>{{ '%.3f'|format(r.correlation) }}
             </td>
-            <td class="font-mono text-neutral-600">{{ '%.3f'|format(r.kld) if r.kld is not none else 'NA' }}</td>
+            <td class="mono cell-muted">{{ '%.3f'|format(r.kld) if r.kld is not none else 'NA' }}</td>
           </tr>
         {% endfor %}
         </tbody>
@@ -71,44 +324,47 @@
   </section>
 
   <!-- Correlation analysis -->
-  <section class="space-y-4">
-    <h2 class="section-title text-lg">Correlation Analysis</h2>
+  <section>
+    <h2 class="section-title">Correlation Analysis</h2>
 
-    <div class="flex items-center gap-3 text-sm text-neutral-600">
-      <label for="threshold" class="whitespace-nowrap">PCC threshold</label>
-      <input id="threshold" type="range" min="0" max="1" step="0.01" value="0.70"
-             class="range range-xs range-neutral max-w-xs" />
-      <span id="threshold-value" class="font-mono w-12">0.70</span>
+    <div class="threshold-row">
+      <label for="threshold">PCC threshold</label>
+      <input id="threshold" type="range" min="0" max="1" step="0.01" value="0.70" />
+      <span id="threshold-value" class="mono">0.70</span>
     </div>
 
-    <div role="tablist" class="tabs tabs-bordered">
-      <input type="radio" name="viz_tabs" role="tab" class="tab" aria-label="Combined" checked
-             data-pane="combined" />
-      <div role="tabpanel" class="tab-content pt-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="panel p-3">
-            <div class="text-sm text-neutral-500 mb-2 text-center">Heatmap</div>
+    <div class="tabs">
+      <input type="radio" name="viz_tabs" id="tab-combined" data-pane="combined" checked />
+      <input type="radio" name="viz_tabs" id="tab-heatmap" data-pane="heatmap" />
+      <input type="radio" name="viz_tabs" id="tab-network" data-pane="network" />
+
+      <div class="tablist" role="tablist">
+        <label class="tab-label" for="tab-combined">Combined</label>
+        <label class="tab-label" for="tab-heatmap">Heatmap</label>
+        <label class="tab-label" for="tab-network">Network</label>
+      </div>
+
+      <div class="tab-content" id="pane-combined">
+        <div class="grid-2">
+          <div class="panel panel-pad">
+            <div class="viz-title">Heatmap</div>
             <div id="heatmap-container-combined" class="viz"></div>
           </div>
-          <div class="panel p-3">
-            <div class="text-sm text-neutral-500 mb-2 text-center">Network</div>
+          <div class="panel panel-pad">
+            <div class="viz-title">Network</div>
             <div id="network-container-combined" class="viz"></div>
           </div>
         </div>
       </div>
 
-      <input type="radio" name="viz_tabs" role="tab" class="tab" aria-label="Heatmap"
-             data-pane="heatmap" />
-      <div role="tabpanel" class="tab-content pt-4">
-        <div class="panel p-3">
+      <div class="tab-content" id="pane-heatmap">
+        <div class="panel panel-pad">
           <div id="heatmap-container-single" class="viz"></div>
         </div>
       </div>
 
-      <input type="radio" name="viz_tabs" role="tab" class="tab" aria-label="Network"
-             data-pane="network" />
-      <div role="tabpanel" class="tab-content pt-4">
-        <div class="panel p-3">
+      <div class="tab-content" id="pane-network">
+        <div class="panel panel-pad">
           <div id="network-container-single" class="viz"></div>
         </div>
       </div>
@@ -117,23 +373,23 @@
 
   <!-- Per-cluster-count sections -->
   {% for sec in cluster_sections %}
-  <section class="space-y-4">
-    <h2 class="section-title text-lg">Results for {{ sec.n_clusters }} clusters</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <section>
+    <h2 class="section-title">Results for {{ sec.n_clusters }} clusters</h2>
+    <div class="card-grid">
     {% for c in sec.groups %}
-      <div class="panel p-4 space-y-3">
-        <div class="text-sm text-neutral-700">
-          Best matched allotype is <span class="font-medium">{{ c.hla }}</span>
+      <div class="panel card">
+        <div class="card-head">
+          Best matched allotype is <span class="hla">{{ c.hla }}</span>
           &middot; PCC {{ '%.2f'|format(c.correlation) }}
           {% if c.kld is not none %}&middot; KLD {{ '%.2f'|format(c.kld) }}{% endif %}
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="logo-pair">
           <div>
-            <div class="text-xs text-center text-neutral-500 mb-1">Gibbs Cluster</div>
+            <div class="logo-caption">Gibbs Cluster</div>
             {% if c.cluster_logo %}<img class="logo-img" src="{{ c.cluster_logo }}" alt="cluster logo">{% endif %}
           </div>
           <div>
-            <div class="text-xs text-center text-neutral-500 mb-1">Reference Motif logo of {{ c.hla }}</div>
+            <div class="logo-caption">Reference Motif logo of {{ c.hla }}</div>
             <img class="logo-img" src="{{ c.ref_logo }}" alt="reference logo">
           </div>
         </div>
@@ -143,7 +399,7 @@
   </section>
   {% endfor %}
 
-  <footer class="border-t border-neutral-200 pt-4 text-xs text-neutral-500">
+  <footer>
     HLA-PepClust v{{ version }} &middot; Li Lab / Purcell Lab, Monash University
     &middot; references: NetMHCpan-4.2 / NetMHCIIpan-4.3, GibbsCluster, MHCMotifAtlas
   </footer>
@@ -230,7 +486,7 @@ function createHeatmap(containerId, threshold) {
 
   if (filteredData.length === 0) {
     const noDataMsg = document.createElement("div");
-    noDataMsg.className = "text-center p-4 text-neutral-400 text-sm";
+    noDataMsg.className = "no-data";
     noDataMsg.textContent = "No data to display with current threshold";
     container.appendChild(noDataMsg);
     return;
@@ -350,7 +606,7 @@ function createNetwork(containerId, threshold) {
   container.innerHTML = '';
 
   const centerBtn = document.createElement("button");
-  centerBtn.className = "btn btn-xs btn-ghost center-network-btn";
+  centerBtn.className = "center-network-btn";
   centerBtn.textContent = "Center View";
   centerBtn.onclick = function () { centerNetwork(containerId); };
   container.appendChild(centerBtn);
@@ -359,7 +615,7 @@ function createNetwork(containerId, threshold) {
 
   if (filteredData.length === 0) {
     const noDataMsg = document.createElement("div");
-    noDataMsg.className = "text-center p-4 text-neutral-400 text-sm";
+    noDataMsg.className = "no-data";
     noDataMsg.textContent = "No data to display with current threshold";
     container.appendChild(noDataMsg);
     return;
