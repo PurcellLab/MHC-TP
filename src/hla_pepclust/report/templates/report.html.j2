@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en" data-theme="corporate">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="HLA-PepClust cluster search results">
+<title>HLA-PepClust {{ version }}</title>
+<!-- daisyUI + Tailwind (CDN) -->
+<link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+<link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<style>
+  .heat-cell { stroke: #fff; }
+  .heat-label { font-size: 10px; fill: currentColor; }
+  .logo-img { width: 100%; height: auto; background: #fff; border-radius: .5rem; }
+</style>
+</head>
+<body class="bg-base-200 min-h-screen">
+
+<div class="navbar bg-base-100 shadow-sm">
+  <div class="flex-1 px-2">
+    <span class="text-xl font-semibold">HLA&#8209;PepClust</span>
+    <span class="badge badge-primary badge-sm ml-2">v{{ version }}</span>
+  </div>
+  <div class="flex-none px-2 text-sm opacity-70">Purcell Lab, Monash University</div>
+</div>
+
+<main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+
+  <!-- Summary stats -->
+  <div class="stats shadow w-full">
+    <div class="stat">
+      <div class="stat-title">Matches</div>
+      <div class="stat-value text-primary">{{ table_rows|length }}</div>
+      <div class="stat-desc">cluster &rarr; HLA/MHC hits</div>
+    </div>
+    <div class="stat">
+      <div class="stat-title">MHC classes</div>
+      <div class="stat-value">{{ class_groups|length }}</div>
+      <div class="stat-desc">{% for g in class_groups %}Class {{ g.mhc_class }}{% if not loop.last %}, {% endif %}{% endfor %}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-title">Top PCC</div>
+      <div class="stat-value text-success">{{ '%.3f'|format(table_rows[0].correlation) if table_rows else 'n/a' }}</div>
+      <div class="stat-desc">best correlation</div>
+    </div>
+  </div>
+
+  <!-- Results table -->
+  <div class="card bg-base-100 shadow">
+    <div class="card-body">
+      <h2 class="card-title">Correlation summary</h2>
+      <div class="overflow-x-auto">
+        <table id="correlation_table" class="table table-zebra table-sm">
+          <thead><tr><th>#</th><th>Cluster</th><th>Best HLA/MHC</th><th>PCC</th><th>KLD</th></tr></thead>
+          <tbody>
+          {% for r in table_rows %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td class="font-mono">{{ r.cluster }}</td>
+              <td class="font-medium">{{ r.hla }}</td>
+              <td><span class="badge {% if r.correlation >= 0.7 %}badge-success{% elif r.correlation >= 0.5 %}badge-warning{% else %}badge-error{% endif %}">{{ '%.3f'|format(r.correlation) }}</span></td>
+              <td>{{ '%.3f'|format(r.kld) if r.kld is not none else 'NA' }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Heatmap -->
+  <div class="card bg-base-100 shadow">
+    <div class="card-body">
+      <h2 class="card-title">Correlation heatmap</h2>
+      <div id="heatmap" class="overflow-x-auto"></div>
+    </div>
+  </div>
+
+  <!-- Per-class logo comparisons -->
+  {% for grp in class_groups %}
+  <div class="card bg-base-100 shadow">
+    <div class="card-body">
+      <h2 class="card-title">Class {{ grp.mhc_class }} &mdash; best matches</h2>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {% for c in grp.clusters %}
+        <div class="card bg-base-200">
+          <div class="card-body p-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <span class="font-semibold font-mono">{{ c.cluster_id }} &rarr; {{ c.hla }}</span>
+              <span class="flex gap-1">
+                <span class="badge badge-success badge-sm">PCC {{ '%.2f'|format(c.correlation) }}</span>
+                {% if c.kld is not none %}<span class="badge badge-ghost badge-sm">KLD {{ '%.2f'|format(c.kld) }}</span>{% endif %}
+              </span>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mt-2">
+              <div>
+                <div class="text-xs text-center opacity-60 mb-1">Gibbs cluster</div>
+                {% if c.cluster_logo %}<img class="logo-img" src="{{ c.cluster_logo }}" alt="cluster logo">{% endif %}
+              </div>
+              <div>
+                <div class="text-xs text-center opacity-60 mb-1">Reference {{ c.hla }}</div>
+                <img class="logo-img" src="{{ c.ref_logo }}" alt="reference logo">
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  <footer class="footer footer-center text-xs opacity-60 p-4">
+    <p>HLA-PepClust v{{ version }} &middot; references: NetMHCpan-4.2 / NetMHCIIpan-4.3, GibbsCluster, MHCMotifAtlas</p>
+  </footer>
+</main>
+
+<script>
+const PCC = {{ pcc_json|safe }};
+
+// Compact D3 heatmap: clusters (rows) x HLA (cols), coloured by PCC.
+(function () {
+  if (!PCC.length) return;
+  const clusters = [...new Set(PCC.map(d => d.Cluster))].sort();
+  const hlas = [...new Set(PCC.map(d => d.HLA))].sort();
+  const cell = 28, mL = 80, mT = 100;
+  const w = mL + hlas.length * cell + 20;
+  const h = mT + clusters.length * cell + 20;
+  const color = d3.scaleSequential(d3.interpolateYlGnBu).domain([0, 1]);
+  const svg = d3.select('#heatmap').append('svg').attr('width', w).attr('height', h);
+  const x = d3.scaleBand().domain(hlas).range([mL, mL + hlas.length * cell]);
+  const y = d3.scaleBand().domain(clusters).range([mT, mT + clusters.length * cell]);
+  svg.append('g').selectAll('text').data(clusters).join('text')
+     .attr('x', mL - 6).attr('y', d => y(d) + cell / 2)
+     .attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
+     .attr('class', 'heat-label').text(d => d);
+  svg.append('g').selectAll('text').data(hlas).join('text')
+     .attr('transform', d => `translate(${x(d) + cell / 2},${mT - 6}) rotate(-90)`)
+     .attr('class', 'heat-label').text(d => d);
+  svg.append('g').selectAll('rect').data(PCC).join('rect')
+     .attr('x', d => x(d.HLA)).attr('y', d => y(d.Cluster))
+     .attr('width', cell - 2).attr('height', cell - 2)
+     .attr('class', 'heat-cell').attr('fill', d => color(d.Correlation))
+     .append('title').text(d => `${d.Cluster} -> ${d.HLA}: ${d.Correlation}`);
+})();
+</script>
+</body>
+</html>
