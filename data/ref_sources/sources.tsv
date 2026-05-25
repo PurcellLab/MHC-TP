@@ -1,0 +1,11 @@
+# Reference-data source manifest — consumed by scripts/fetch_sources.sh (dev-only).
+# Tab-separated. Columns:
+#   name      stable identifier (also the extracted/<name> subdir)
+#   filename  on-disk name under data/ref_sources/raw/
+#   bytes     expected size ("-" = unpinned)
+#   sha256    expected checksum, fatal on mismatch ("-" = record on first fetch)
+#   extract   "tar.gz" to unpack into extracted/<name>/, else "none"
+#   url       upstream source
+name	filename	bytes	sha256	extract	url
+netmhcpan42_all_logos	netmhcpan42_all_logos.tar.gz	50575693	e3bc7d284c9804e9dc8623afb0cf39e9d406c8e42501d60cfc54d5a47f7d9f0a	tar.gz	https://services.healthtech.dtu.dk/services/NetMHCpan-4.2/gz_files/all_logos.tar.gz
+netmhciipan43_all_logos	netmhciipan43_all_logos.tar.gz	-	-	tar.gz	https://services.healthtech.dtu.dk/services/NetMHCIIpan-4.3/gz_files/all_logos.tar.gz
