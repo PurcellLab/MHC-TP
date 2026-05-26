@@ -1,0 +1,60 @@
+site_name: MHC-TP
+site_description: Cluster immunopeptidomics peptides by HLA/MHC binding motif, with an interactive HTML report
+site_url: https://purcelllab.github.io/MHC-TP/
+repo_url: https://github.com/PurcellLab/MHC-TP
+repo_name: PurcellLab/MHC-TP
+edit_uri: ""
+docs_dir: docs
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - content.code.copy
+    - search.suggest
+    - toc.follow
+
+nav:
+  - Home: index.md
+  - Usage: usage.md
+  - API reference: api.md
+  - Example report: example-report.html
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            show_root_heading: true
+            show_source: true
+            members_order: source
+            separate_signature: true
+            docstring_section_style: list
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
