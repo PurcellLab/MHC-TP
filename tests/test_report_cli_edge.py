@@ -150,7 +150,7 @@ def test_datatable_rows_sorted_desc_kld_none():
     corrs = [r["correlation"] for r in rows]
     assert corrs == sorted(corrs, reverse=True)
     assert all(r["kld"] is None for r in rows)
-    assert set(rows[0].keys()) == {"cluster", "hla", "correlation", "kld"}
+    assert set(rows[0].keys()) == {"cluster", "hla", "correlation", "kld", "below"}
 
 
 def test_datatable_rows_kld_looked_up():
@@ -461,7 +461,7 @@ def test_run_search_no_html_writes_correlations_csv(tmp_path):
     assert csv_path.exists()
     written = pd.read_csv(csv_path)
     assert list(written.columns) == ["cluster", "hla", "formatted", "correlation"]
-    assert (written["hla"] == "HLA_A0201").any()
+    assert (written["hla"] == "A*02:01").any()
     assert (written["formatted"] == "A0201").any()
     # No HTML produced when make_html=False.
     assert not (out / "clust_result" / "mhc-tp-result.html").exists()

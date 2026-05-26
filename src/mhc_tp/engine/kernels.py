@@ -8,11 +8,34 @@ from numba import jit, prange
 # np.isnan() masking below (NaN cells must be excluded, per the docstring).
 @jit(nopython=True, parallel=True, cache=True)
 def compute_all_correlations(gibbs_matrices, ref_matrices, hla_mask, threshold):
-    """All-pairs flattened Pearson correlation, parallel over Gibbs matrices.
+    r"""All-pairs flattened Pearson correlation, parallel over Gibbs matrices.
 
-    Correlates over the cells that are non-zero and non-NaN in the Gibbs
-    matrix. Stores a correlation only when it is >= threshold; otherwise the
-    cell keeps the -1.0 sentinel. Returns (correlations, invalid_flags).
+    Each PSSM is flattened to a vector. Only the cells that are informative in
+    the Gibbs matrix are scored: the valid set is
+
+        V = { k : g_k != 0 and g_k is not NaN }
+
+    Restricted to those cells, the score for a (Gibbs g, reference r) pair is
+    the Pearson correlation coefficient
+
+                  (1/|V|) * Σ_{k in V} (g_k - ḡ)(r_k - r̄)
+        PCC(g,r) = ----------------------------------------
+                                σ_g · σ_r
+
+    where ḡ, r̄ are the means and σ_g, σ_r the population standard deviations
+    taken over V:
+
+        ḡ   = (1/|V|) Σ g_k ,                σ_g = sqrt( (1/|V|) Σ (g_k - ḡ)^2 )
+        r̄   = (1/|V|) Σ r_k ,                σ_r = sqrt( (1/|V|) Σ (r_k - r̄)^2 )
+
+    PCC lies in [-1, 1] (1 = identical motif shape) and is scale/offset
+    invariant, so it measures the *pattern* of position preferences rather than
+    absolute weight magnitudes.
+
+    Guards: a Gibbs matrix with |V| < 10 or σ_g = 0 is flagged invalid (its row
+    is skipped); a reference with σ_r = 0 is skipped for that pair. A score is
+    stored only when PCC >= ``threshold``; otherwise the cell keeps the -1.0
+    sentinel. Returns (correlations, invalid_flags).
     """
     n_gibbs = gibbs_matrices.shape[0]
     n_refs = ref_matrices.shape[0]

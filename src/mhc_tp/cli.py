@@ -55,6 +55,8 @@ def run_search(
     log_level="info",
     log_to_file=False,
     threads=None,
+    always_top_n=False,
+    mhc_class="all",
 ):
     """Run the search; write correlations.csv and (default) the HTML report."""
     # Lazy import: pulls numba (~1.4s) only when a search actually runs, so
@@ -71,10 +73,16 @@ def run_search(
     log.info("[bold]Stage 1/4[/bold] loading reference …")
     # Load matrices + metadata only (skip the heavy logo blob column) for the search.
     ref = read_reference(reference, columns=COLUMNS)
+    if mhc_class and mhc_class != "all":
+        ref = ref[ref["mhc_class"] == mhc_class].reset_index(drop=True)
+        if ref.empty:
+            raise SystemExit(f"no class {mhc_class} allotypes in {reference}")
+    class_label = {"I": "class I", "II": "class II"}.get(mhc_class, "class I+II")
     log.info(
-        "Reference: [bold]%d[/bold] %s allotypes (class I+II) from %s",
+        "Reference: [bold]%d[/bold] %s %s allotypes from %s",
         len(ref),
         species,
+        class_label,
         reference,
     )
 
@@ -85,8 +93,18 @@ def run_search(
     log.info(
         "[bold]Stage 3/4[/bold] numba correlation search (threshold %.2f) …", threshold
     )
-    cd = search(ref, gibbs, threshold=threshold, top_n=top_n, hla_filter=hla_filter)
-    log.info("[green]Found %d matches above threshold[/green]", len(cd))
+    cd = search(
+        ref,
+        gibbs,
+        threshold=threshold,
+        top_n=top_n,
+        hla_filter=hla_filter,
+        always_top_n=always_top_n,
+    )
+    if always_top_n:
+        log.info("[green]Found %d matches (top-%d per cluster)[/green]", len(cd), top_n)
+    else:
+        log.info("[green]Found %d matches above threshold[/green]", len(cd))
 
     # Map the raw `formatted` key to the Immunolyser display name; keep both so
     # the CSV stays joinable on `formatted` while showing pretty `hla`.
@@ -135,6 +153,9 @@ def run_search(
             gibbs_dir=gibbs_dir,
             logo_map=logo_map,
             name_map=name_map,
+            top_n=top_n,
+            threshold=threshold,
+            always_top_n=always_top_n,
         )
         log.info("HTML report → %s", out_dir / "mhc-tp-result.html")
     log.info("[green]Done. Results in %s[/green]", out_dir)
@@ -168,8 +189,23 @@ def main(argv=None):
         help="path to <species>.parquet (default: fetched data dir; see `fetch`)",
     )
     s.add_argument("-s", "--species", default="human")
+    s.add_argument(
+        "-c",
+        "--class",
+        dest="mhc_class",
+        default="all",
+        choices=["I", "II", "all"],
+        help="restrict the reference to MHC class I, II, or all (default: all)",
+    )
     s.add_argument("-t", "--threshold", type=float, default=0.70)
     s.add_argument("--topNHits", type=int, default=3)
+    s.add_argument(
+        "--always-top-n",
+        dest="always_top_n",
+        action="store_true",
+        help="return each cluster's top-N matches even if some fall below "
+        "--threshold (threshold then only annotates confidence; no cluster is dropped)",
+    )
     s.add_argument("-o", "--output", default="output")
     s.add_argument(
         "--no-html", action="store_true", help="skip the HTML report (CSV only)"
@@ -335,6 +371,8 @@ def main(argv=None):
             log_level=args.log_level,
             log_to_file=args.log,
             threads=args.threads,
+            always_top_n=args.always_top_n,
+            mhc_class=args.mhc_class,
         )
         return
     parser.print_help()

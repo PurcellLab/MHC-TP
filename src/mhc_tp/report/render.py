@@ -34,6 +34,9 @@ def render_report(
     gibbs_dir: str | None = None,
     logo_map: dict | None = None,
     name_map: dict | None = None,
+    top_n: int = 3,
+    threshold: float = 0.70,
+    always_top_n: bool = False,
 ) -> str:
     """Write <output_dir>/clust_result/mhc-tp-result.html and return its path.
 
@@ -45,7 +48,7 @@ def render_report(
     name_map = name_map or {}
     ref_by_fmt = {r.formatted: r for r in reference_df.itertuples()}
 
-    table_rows = datatable_rows(correlation_dict, kld_df, name_map)
+    table_rows = datatable_rows(correlation_dict, kld_df, name_map, threshold)
     pcc_json = json.dumps(pcc_records(correlation_dict, name_map))
 
     # Best HLA per cluster id, grouped by the number of clusters N, with both
@@ -88,6 +91,7 @@ def render_report(
                 "group": group,
                 "hla": hla_display,
                 "correlation": round(float(corr), 3),
+                "below": float(corr) < threshold,
                 "kld": _kld(kld_df, group, nclust),
                 "ref_logo": ref_logo,
                 "cluster_logo": cluster_logo,
@@ -112,6 +116,9 @@ def render_report(
         pcc_json=pcc_json,
         table_rows=table_rows,
         cluster_sections=cluster_sections,
+        top_n=top_n,
+        threshold=threshold,
+        always_top_n=always_top_n,
     )
 
     out_dir = Path(output_dir) / "clust_result"

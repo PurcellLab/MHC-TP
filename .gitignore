@@ -12,6 +12,8 @@ data/*html
 !data/ref_data/Gibbs_motifs_mouse/motif/*.png 
 output/*
 .DS_Store
+# MkDocs build output
+/site/
 cli/*__pycache__
 test_output
 poetry.lock
