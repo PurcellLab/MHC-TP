@@ -34,7 +34,11 @@ nav:
   - Usage: usage.md
   - API reference: api.md
   - LLM guide: llm.md
-  - Example report: example-report.html
+  - Example reports:
+      - Human (class I + II): example-report.html
+      - Human — class I: examples/human-classI.html
+      # - Human — class II: examples/human-classII.html  # add when a class II dataset is available
+      - Mouse: examples/mouse.html
 
 plugins:
   - search
