@@ -110,3 +110,30 @@ src/mhc_tp/
   tui/              Rich console banner, logging, results table
 tests/              pytest suite
 ```
+
+---
+
+## Citation
+
+If you use MHC-TP in your work, please cite:
+
+> Munday PR, Krishna SSG, Fehring J, Croft NP, Purcell AW, Li C, Braun A.
+> Immunolyser 2.0: An advanced computational pipeline for comprehensive analysis
+> of immunopeptidomic data. *Comput Struct Biotechnol J.* 2025;29:296–304.
+> doi:[10.1016/j.csbj.2025.10.007](https://doi.org/10.1016/j.csbj.2025.10.007).
+> PMID: [41209766](https://pubmed.ncbi.nlm.nih.gov/41209766/); PMCID: PMC12590289.
+
+```bibtex
+@article{Munday2025Immunolyser2,
+  title   = {Immunolyser 2.0: An advanced computational pipeline for comprehensive analysis of immunopeptidomic data},
+  author  = {Munday, Prithvi Raj and Krishna, Sanjay S. G. and Fehring, Joshua and Croft, Nathan P. and Purcell, Anthony W. and Li, Chen and Braun, Asolina},
+  journal = {Computational and Structural Biotechnology Journal},
+  volume  = {29},
+  pages   = {296--304},
+  year    = {2025},
+  doi     = {10.1016/j.csbj.2025.10.007},
+  pmid    = {41209766},
+  pmcid   = {PMC12590289}
+}
+```
+

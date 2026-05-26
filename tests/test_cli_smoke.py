@@ -39,7 +39,7 @@ def test_run_search_writes_csv(tmp_path):
     )
     res = pd.read_csv(out / "clust_result" / "correlations.csv")
     assert {"cluster", "hla", "formatted", "correlation"} <= set(res.columns)
-    assert (res["hla"] == "HLA_A0201").any()
+    assert (res["hla"] == "A*02:01").any()  # canonical display = raw allotype
     assert (res["formatted"] == "A0201").any()
 
 

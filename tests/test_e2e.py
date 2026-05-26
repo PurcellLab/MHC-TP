@@ -56,6 +56,6 @@ def test_end_to_end_search(tmp_path):
     assert len(res) >= 1
     # gibbs.1of1 was built from the A0201 motif + small noise -> A0201 should win.
     top = res.sort_values("correlation", ascending=False).iloc[0]
-    assert top["hla"] == "HLA_A0201"  # pretty display name
+    assert top["hla"] == "HLA-A0201"  # canonical display = raw allotype, matches logo title
     assert top["formatted"] == "A0201"  # raw key preserved
     assert top["correlation"] > 0.8

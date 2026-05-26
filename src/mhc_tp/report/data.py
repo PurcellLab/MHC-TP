@@ -44,10 +44,13 @@ def datatable_rows(
     correlation_dict,
     kld_df: pd.DataFrame | None,
     name_map: dict[str, str] | None = None,
+    threshold: float = 0.70,
 ) -> list[dict]:
     """Rows for the results DataTable, sorted by correlation desc, with KLD.
 
     ``name_map`` ({formatted: display}) supplies pretty allele labels.
+    ``below`` flags rows whose correlation is under ``threshold`` (only possible
+    when the search ran in always-top-N mode).
     """
     name_map = name_map or {}
     rows = []
@@ -59,6 +62,7 @@ def datatable_rows(
                 "cluster": cid,
                 "hla": name_map.get(hla, hla),
                 "correlation": round(float(corr), 4),
+                "below": float(corr) < threshold,
                 "kld": kld,
             }
         )
