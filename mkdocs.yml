@@ -33,6 +33,7 @@ nav:
   - Home: index.md
   - Usage: usage.md
   - API reference: api.md
+  - LLM guide: llm.md
   - Example report: example-report.html
 
 plugins:
