@@ -1,0 +1,29 @@
+/* "Copy page as text" button */
+.copy-page-btn {
+  float: right;
+  margin: 0 0 .5rem .75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font: inherit;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  padding: .3rem .7rem;
+  color: var(--md-primary-fg-color);
+  background: transparent;
+  border: 1px solid var(--md-primary-fg-color);
+  border-radius: .4rem;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.copy-page-btn::before { content: "\1F4CB"; /* clipboard */ }
+.copy-page-btn:hover {
+  background: var(--md-primary-fg-color);
+  color: var(--md-primary-bg-color);
+}
+.copy-page-btn.copied {
+  border-color: #2e7d32;
+  color: #2e7d32;
+  background: transparent;
+}

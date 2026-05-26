@@ -49,6 +49,15 @@ plugins:
             separate_signature: true
             docstring_section_style: list
 
+hooks:
+  - docs_hooks.py
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/copy-page.js
+
 markdown_extensions:
   - admonition
   - attr_list

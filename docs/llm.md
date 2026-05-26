@@ -4,6 +4,10 @@
 > help an end user run **every** MHC-TP use case correctly. It restates the
 > install, inputs, commands, flags, recipes, outputs, and the matching method so
 > no other page is required.
+>
+> **Raw text:** a machine-readable copy of this page is served at
+> [`/llm.txt`](../llm.txt). Use the **Copy page as text** button (top right) to
+> copy the whole guide to your clipboard.
 
 ## What MHC-TP does
 
