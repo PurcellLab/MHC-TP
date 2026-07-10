@@ -115,6 +115,7 @@ class npClusterSearch:
         
         self.reference_matrices = unified_matrices
         self.reference_metadata = metadata_df
+        self.max_positions = max_positions
         self.is_initialized = True
         
         build_time = time.time() - start_time
